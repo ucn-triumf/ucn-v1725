@@ -18,7 +18,6 @@
 #define V1725_CHANNEL_CFG_BIT_CLR             0x8008      /* write only; D32 */ 
 #define V1725_BUFFER_ORGANIZATION             0x800C      /* R/W       ; D32 */ 
 #define V1725_BUFFER_FREE                     0x8010      /* R/W       ; D32 */ 
-#define V1725_CUSTOM_SIZE                     0x8020      /* R/W       ; D32 */ 
 #define V1725_ACQUISITION_CONTROL             0x8100      /* R/W       ; D32 */ 
 #define V1725_ACQUISITION_STATUS              0x8104      /* read  only; D32 */ 
 #define V1725_SW_TRIGGER                      0x8108      /* write only; D32 */ 
@@ -53,6 +52,7 @@
 #define V1725_CONFIG_RELOAD                   0xEF34      /* write only; D32 */ 
 #define V1725_CONFIG_ROM                      0xF000      /* read  only; D32 */ 
 
+#define V1725_RECORD_LENGTH                   0x1020      /* R/W       ; D32 */ 
 #define V1725_ZS_THRESHOLD                    0x1024      /* For channel 0 */
 #define V1725_ZS_NSAMP                        0x1028      /* For channel 0 */
 #define V1725_CHANNEL_THRESHOLD               0x1080      /* For channel 0 */

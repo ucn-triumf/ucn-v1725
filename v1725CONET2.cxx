@@ -19,30 +19,45 @@ const char * v1725CONET2::config_str_board[] = {\
     "Acq mode = INT : 2",\
     "Software Trig Mode = INT : 0",\
     "Trig Input Mode = INT :0",\
-    "Channel Mask = DWORD : 255",\
+    "Channel Mask = DWORD : 65535",\
     "Post Trigger = DWORD : 80",\
-    "DPP Record Length = INT : 0",\
-    "Save waveforms = INT : 0", \
-    "DPP TrigHoldoff = INT : 0",\
-    "DPP Threshold = INT[8] :",\
-    "[0] 100",\
-    "[1] 100",\
-    "[2] 100",\
-    "[3] 100",\
-    "[4] 100",\
-    "[5] 100",\
-    "[6] 100",\
-    "[7] 100",\
-    "DPP Num Sample Baseline = INT[8] :",\
-    "[0] 4",\
-    "[1] 4",\
-    "[2] 4",\
-    "[3] 4",\
-    "[4] 4",\
-    "[5] 4",\
-    "[6] 4",\
-    "[7] 4",\
-    "DPP Long Gate = INT[8] :",\
+    "Save waveforms = INT : 1", \
+    "DPP TrigHoldoff = INT : 28",\
+    "DPP Threshold = INT[16] :",\
+    "[0] 200",\
+    "[1] 200",\
+    "[2] 200",\
+    "[3] 200",\
+    "[4] 200",\
+    "[5] 200",\
+    "[6] 200",\
+    "[7] 200",\
+    "[8] 200",\
+    "[9] 200",\
+    "[10] 200",\
+    "[11] 200",\
+    "[12] 200",\
+    "[13] 200",\
+    "[14] 200",\
+    "[15] 200",\
+    "DPP Num Sample Baseline = INT[16] :",\
+    "[0] 0",\
+    "[1] 0",\
+    "[2] 0",\
+    "[3] 0",\
+    "[4] 0",\
+    "[5] 0",\
+    "[6] 0",\
+    "[7] 0",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP Long Gate = INT[16] :",\
     "[0] 50",\
     "[1] 50",\
     "[2] 50",\
@@ -51,7 +66,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 50",\
     "[6] 50",\
     "[7] 50",\
-    "DPP Short Gate = INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP Short Gate = INT[16] :",\
     "[0] 10",\
     "[1] 10",\
     "[2] 10",\
@@ -60,7 +83,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 10",\
     "[6] 10",\
     "[7] 10",\
-    "DPP Gate Offset = INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP Gate Offset = INT[16] :",\
     "[0] 8",\
     "[1] 8",\
     "[2] 8",\
@@ -69,7 +100,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 8",\
     "[6] 8",\
     "[7] 8",\
-    "DPP SelfTrig= INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP SelfTrig= INT[16] :",\
     "[0] 1",\
     "[1] 1",\
     "[2] 1",\
@@ -78,7 +117,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 1",\
     "[6] 1",\
     "[7] 1",\
-    "DPP Trig Valid Window = INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP Trig Valid Window = INT[16] :",\
     "[0] 0",\
     "[1] 0",\
     "[2] 0",\
@@ -87,7 +134,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 0",\
     "[6] 0",\
     "[7] 0",\
-    "DPP Charge Sensitivity = INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP Charge Sensitivity = INT[16] :",\
     "[0] 0",\
     "[1] 0",\
     "[2] 0",\
@@ -96,7 +151,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 0",\
     "[6] 0",\
     "[7] 0",\
-    "DC Offset = INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DC Offset = INT[16] :",\
     "[0] 32768",\
     "[1] 32768",\
     "[2] 32768",\
@@ -105,7 +168,15 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 32768",\
     "[6] 32768",\
     "[7] 32768",\
-    "Pre-Trigger Size = INT[8] :",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "Pre-Trigger Size = INT[16] :",\
     "[0] 16",\
     "[1] 16",\
     "[2] 16",\
@@ -114,19 +185,38 @@ const char * v1725CONET2::config_str_board[] = {\
     "[5] 16",\
     "[6] 16",\
     "[7] 16",\
+    "[8] ",\
+    "[9] ",\
+    "[10] ",\
+    "[11] ",\
+    "[12] ",\
+    "[13] ",\
+    "[14] ",\
+    "[15] ",\
+    "DPP Record Length = INT[16] :",\
+    "[0] 5",			\
+    "[1] 5",\
+    "[2] 5",\
+    "[3] 5",\
+    "[4] 5",\
+    "[5] 5",\
+    "[6] 5",\
+    "[7] 5",\
+    "[8] 5",\
+    "[9] 5",\
+    "[10] 5",\
+    "[11] 5",\
+    "[12] 5",\
+    "[13] 5",\
+    "[14] 5",\
+    "[15] 5",\
     "Baseline Threshold = INT : 100",	\
     NULL
 };
 
 const char v1725CONET2::history_settings[][NAME_LENGTH] = { "eStored", "busy" };
 
-int BaselineSetValue;                  //added May 26, 2016//the target baseline that all other channels offset themselves to match
-int Base[8]={0,0,0,0,0,0,0,0};         //added May 26, 2016//the baseline of the channel before an offset is applied (used in offset eqn)
-int EventCount=0;                      //added May 26, 2016//counter to display how many times the FillEventBuffer function has been called
-int HadEvent_m0[8]={0,0,0,0,0,0,0,0};  //added May 27, 2016//used to determine how many events channel i of module 1 has recieved
-int HadEvent_m1[8]={0,0,0,0,0,0,0,0};  //added May 27, 2016//used to determine how many events channel i of module 2 has recieved
-int verb=0;
-void DCOFFSETCALC(int sum1[8], int sum0[8], int moduleID, int NumEvents1[8]);
+void DCOFFSETCALC(int sum1[8], int sum0[8], int moduleID, int NumEvents1[16]);
 
 /**
  * \brief   Constructor for the module object
@@ -255,11 +345,12 @@ v1725CONET2::ConnectErrorCode v1725CONET2::Connect(int connAttemptsMax,
   // Check firmware revision (only DPP-PSD firmware can be used)                                 
   int MajorNumber;
   sscanf(BoardInfo.AMC_FirmwareRel, "%d", &MajorNumber);
-  if (MajorNumber != 131 && MajorNumber != 132 ) {
+  if (MajorNumber != 136 ) {
     printf("<v1725CONET2::Connect> This digitizer doesn't have a DPP-PSD firmware\n");
     return ConnectErrorCaenComm;
   }
-
+    return ConnectErrorTimeout;
+  
   return returnCode;
 }
 
@@ -338,7 +429,7 @@ bool v1725CONET2::StartRun()
 
 
   // Reset counters
-  for(int i = 0; i < 8; i++) EventCounter[i] = 0;
+  for(int i = 0; i < 16; i++) EventCounter[i] = 0;
   gettimeofday(&v1725LastTime, NULL);
 
   // save config settings to file
@@ -530,8 +621,8 @@ bool v1725CONET2::FillEventBank(char * pevent)
   DWORD NTotal =0;
   uint32_t NumEvents[MaxNChannels];
   
-   int sum0[8]={0,0,0,0,0,0,0,0};//added May 26, 2016
-   int sum1[8]={0,0,0,0,0,0,0,0};//added May 30, 2016 //may not need
+  int sum0[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//added May 26, 2016
+  int sum1[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//added May 30, 2016 //may not need
  
 
   // read in data
@@ -632,7 +723,7 @@ bool v1725CONET2::FillEventBank(char * pevent)
 	  //std::cout<<"0x8000 read    to be "<<std::bitset<32>(reg)<<std::endl;
 	}
 	
-	for (int ich=0; ich<8; ++ich){
+	for (int ich=0; ich< 16; ++ich){
 	  //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
 	  unsigned regn;
 	  unsigned addrn = 0x1080 + ich*0x100;
@@ -685,8 +776,8 @@ bool v1725CONET2::FillEventBank(char * pevent)
       curev++;	   
     }
   }
-  int NumEvents1[8]={0,0,0,0,0,0,0,0};
-  for (ch=0; ch<8; ch++)
+  int NumEvents1[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  for (ch=0; ch< 16; ch++)
     {
       NumEvents1[ch]=(int)(NumEvents[ch]);
     }
@@ -869,35 +960,6 @@ int v1725CONET2::InitializeForAcq()
     }
   }
  
-  
-
-  /*for (int ich=0; ich<8; ++ich){
-    //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
-    unsigned regn;
-    unsigned addrn = 0x1080 + ich*0x100;
-    ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
-    if ( ret != CAEN_DGTZ_Success ) {
-      std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
-    } else {
-      //std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
-    }
-
-    ret = CAEN_DGTZ_WriteRegister(_device_handle, addrn, ( regn | (1<<7) ) );
-    if ( ret != CAEN_DGTZ_Success ) {
-      std::cout<<"CAEN_DGTZ_WriteRegister "<<std::hex<<addrn<<" failed with "<<ret<<std::endl;
-    } else {
-      //std::cout<<std::hex<<addrn<<" write to be "<< std::bitset<32>( regn | (1<<7) ) <<" == "<<std::hex<<(regn|(1<<7))<<std::dec<<std::endl;
-    }
-    ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
-    if ( ret != CAEN_DGTZ_Success ) {
-      std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
-    } else {
-      //std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
-    }
-
-    }*/
-
-
   if (verbose) cout << GetName() << "::InitializeForAcq()" << endl;
 
   // check if the ODB settings are loaded
@@ -937,14 +999,12 @@ int v1725CONET2::InitializeForAcq()
                                                            // 1==CAEN_DGTZ_DPP_ACQ_MODE_List or 
                                                            // 2== CAEN_DGTZ_DPP_ACQ_MODE_Mixed; 
                                                            // Warning: List mode doesn't save baseline info
-  DPPConfig.Params.RecordLength = config.recordLen;        // Num of samples of the waveforms (only for 
-                                                           // Oscilloscope mode)
   DPPConfig.Params.SaveWaveforms = config.savewaveforms;
   DPPConfig.Params.ChannelMask = config.channel_mask;      // Channel enable mask
   DPPConfig.Params.EventAggr = 1;// 255;// 512;//1024;//0;//1024;                          // number of events in one aggregate (0=automatic)
   DPPConfig.Params.PulsePolarity = CAEN_DGTZ_PulsePolarityNegative; // Pulse Polarity (this parameter can be 
                                                                     // individual)
-  for(int ch=0; ch<8; ch++) {
+  for(int ch=0; ch< 16; ch++) {
     DPPConfig.DPPParams.thr[ch] = config.DPPthresh[ch];    // Trigger Threshold
     /* The following parameter is used to specifiy the number of samples for the baseline averaging:
        0 -> absolute Bl
@@ -1043,7 +1103,7 @@ int v1725CONET2::InitializeForAcq()
 
 
   int chmask=1;
-  for (int ich=0; ich<8; ich++){
+  for (int ich=0; ich< 16; ich++){
     ret = CAEN_DGTZ_SetChannelSelfTrigger(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.DPPSelfTrig[ich], chmask);
     if (ret != CAEN_DGTZ_Success) {
       printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelSelfTrigger ch=%d mask=%d selftrig=%d retval=\n",ich, chmask, config.DPPSelfTrig[ich], ret);
@@ -1083,13 +1143,17 @@ int v1725CONET2::InitializeForAcq()
 
   // Set DPP parameters for individual channels
   int retval=0;
-  for(int i=0; i<8; i++) {
+  int addr;
+  for(int i=0; i< 16; i++) {
 
     if (DPPConfig.Params.ChannelMask & (1<<i)) {
 
-      printf("Record length: %i\n",DPPConfig.Params.RecordLength);
+      printf("Record length: %i\n",config.recordLen[i]);
       // Set the number of samples for each waveform (you can set different RL for different channels)             
-      retval |= CAEN_DGTZ_SetRecordLength(_device_handle, DPPConfig.Params.RecordLength, i);
+      addr = V1725_RECORD_LENGTH | (i << 8);
+      ret = CAEN_DGTZ_WriteRegister(_device_handle, addr, config.recordLen[i]);
+  
+      retval |= CAEN_DGTZ_SetRecordLength(_device_handle, config.recordLen[i], i);
       
       // Set a DC offset to the input signal to adapt it to digitizer's dynamic range                              
       retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, i, config.DCoffset[i]);
@@ -1108,18 +1172,6 @@ int v1725CONET2::InitializeForAcq()
   } // end for
   
   
-  // int adefaultdcoffset = 0x8000; 
-
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 0, adefaultdcoffset + 16*37  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 1, adefaultdcoffset + 16*55  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 2, adefaultdcoffset +16*(-22)  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 3, adefaultdcoffset + 16*6  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 4, adefaultdcoffset + 16*(-1)  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 5, adefaultdcoffset + 16*15  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 6, adefaultdcoffset + 16*23  );
-  // retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, 7, adefaultdcoffset + 16*(-1)  );
-
-
 
   // Set the virtual probes
   // DPP-PSD for x720 boards can save:
@@ -1174,7 +1226,7 @@ int v1725CONET2::InitializeForAcq()
   }
   // read and write all 0x1n80 registers
   // set bit 7 to 1 to allow for extended time stamp
-  for (int ich=0; ich<8; ++ich){
+  for (int ich=0; ich< 16; ++ich){
     if(verbose){ 
       //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
     }
@@ -1289,7 +1341,7 @@ int v1725CONET2::InitializeForAcq()
       std::cout<<"0x8000 read to be "<<std::bitset<32>(reg3)<<std::endl;
     }
     
-    for (int ich=0; ich<8; ++ich){
+    for (int ich=0; ich< 16; ++ich){
       //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
       unsigned regn;
       unsigned addrn = 0x1080 + ich*0x100;
@@ -1381,21 +1433,6 @@ BOOL v1725CONET2::IsZLEData(){
 
 void v1725CONET2::PrintSettings(){
 
-    // // DPP settings
-    // INT recordLen;                     //separate from SetDPPParameters
-    // INT savewaveforms;                 //separate from SetDPPParameters
-    // INT DPPTrigHoldoff;            
-    // INT DPPthresh[8];
-    // INT DPPnsbl[8];
-    // INT DPPLongGate[8];
-    // INT DPPShortGate[8];
-    // INT DPPPregateWidth[8];
-    // INT DPPSelfTrig[8];
-    // INT DPPtvw[8];
-    // INT DPPChargeSen[8];
-    // INT DCoffset[8];                //separate from SetDPPParameters     
-    // INT BLthr;
-
   CAEN_DGTZ_ErrorCode retval;
 
   printf("v1725CONET2::PrintSettings vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
@@ -1432,7 +1469,7 @@ void v1725CONET2::PrintSettings(){
 
   printf("DPPTrigHoldoff     Set = %08d\n",config.DPPTrigHoldoff);
   printf("Baseline threshold Set = %08d\n",config.BLthr);
-  for (int i=0; i<8; i++){
+  for (int i=0; i< 16; i++){
     printf("Channel %d Settings:\n",i);
     printf("  threshold          = %08d\n", config.DPPthresh[i]);
     printf("  nsbl               = %08d\n", config.DPPnsbl[i]);
@@ -1522,7 +1559,7 @@ void v1725CONET2::SaveSettings(){
   output += std::string(ptr);
   sprintf(ptr,"Baseline threshold Set = %08d\n",config.BLthr);
   output += std::string(ptr);
-  for (int i=0; i<8; i++){
+  for (int i=0; i< 16; i++){
     sprintf(ptr,"Channel %d Settings:\n",i);
     output += std::string(ptr);
     sprintf(ptr,"  threshold          = %08d\n", config.DPPthresh[i]);
@@ -1613,7 +1650,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   double dtime = nowTime.tv_sec - v1725LastTime.tv_sec + (nowTime.tv_usec - v1725LastTime.tv_usec)/1000000.0;
   if(verbose) printf("Rates: ");
   float total_rate = 0;
-  for(int i = 0; i < 8; i++){
+  for(int i = 0; i < 16; i++){
     double rate = 0;
     if (dtime !=0)
       rate = (float)EventCounter[i]/(dtime);

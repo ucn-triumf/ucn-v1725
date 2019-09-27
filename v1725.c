@@ -209,7 +209,7 @@ void v1725_info(MVME_INTERFACE *mvme, uint32_t base, int *nchannels, uint32_t *n
   // times the number of active channels
   chanmask = 0xff & regRead(mvme, base, V1725_CHANNEL_EN_MASK); 
   *nchannels = 0;
-  for (i=0;i<8;i++) {
+  for (i=0;i<16;i++) {
     if (chanmask & (1<<i))
       *nchannels += 1;
   }
@@ -439,7 +439,7 @@ int main (int argc, char* argv[]) {
   n32word  =  1<<regRead(myvme, V1725_BASE, V1725_BUFFER_ORGANIZATION);
   // times the number of active channels
   chanmask = 0xff & regRead(myvme, V1725_BASE, V1725_CHANNEL_EN_MASK); 
-  for (i=0;i<8;i++) 
+  for (i=0;i<16;i++) 
     if (chanmask & (1<<i))
       nchannels++;
   printf("chanmask : %x , nchannels:  %d\n", chanmask, nchannels);

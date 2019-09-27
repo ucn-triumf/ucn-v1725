@@ -257,7 +257,7 @@ INT frontend_init(){
         int moduleID = iLink*NB1725PERLINK + iBoard;
 
         // Create module objects
-        ov1725.emplace_back(v1725CONET2(feIndex, iLink, iBoard, moduleID, hDB));
+        ov1725.emplace_back(v1725CONET2(feIndex, iLink+1, iBoard, moduleID, hDB));  /// For the moment, while using second link.
 
 	ov1725.back().SetBoardRecord(hDB,seq_callback);
 

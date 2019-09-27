@@ -10,7 +10,7 @@ This file contains the class definition for the v1725 module driver.
 #ifndef V1725_HXX_INCLUDE
 #define V1725_HXX_INCLUDE
 
-#define MaxNChannels 8
+#define MaxNChannels 16
 #define MAXNBITS 12
 
 #include <iostream>
@@ -192,19 +192,19 @@ void SaveSettings();
     DWORD     post_trigger;            //!< 0x8114@[31.. 0]
 
     // DPP settings
-    INT recordLen;                     //separate from SetDPPParameters
     INT savewaveforms;                 //separate from SetDPPParameters
     INT DPPTrigHoldoff;            
-    INT DPPthresh[8];
-    INT DPPnsbl[8];
-    INT DPPLongGate[8];
-    INT DPPShortGate[8];
-    INT DPPPregateWidth[8];
-    INT DPPSelfTrig[8];
-    INT DPPtvw[8];
-    INT DPPChargeSen[8];
-    INT DCoffset[8];                //separate from SetDPPParameters     
-    INT PreTriggerSize[8];
+    INT DPPthresh[16];
+    INT DPPnsbl[16];
+    INT DPPLongGate[16];
+    INT DPPShortGate[16];
+    INT DPPPregateWidth[16];
+    INT DPPSelfTrig[16];
+    INT DPPtvw[16];
+    INT DPPChargeSen[16];
+    INT DCoffset[16];                //separate from SetDPPParameters     
+    INT PreTriggerSize[16];
+    INT recordLen[16];                     //separate from SetDPPParameters
     INT BLthr;
   } config; //!< instance of config structure
 
