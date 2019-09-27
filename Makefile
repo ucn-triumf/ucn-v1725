@@ -1,11 +1,7 @@
 ####################################################################
 #
-#  Name:         Makefile
-#  Created by:   Stefan Ritt
+#  Contents:     Makefile for the v1725 frontend for TUCAN
 #
-#  Contents:     Makefile for the v1720 frontend
-#
-#  $Id: Makefile 3655 2007-03-21 20:51:28Z amaudruz $
 #
 #####################################################################
 #
@@ -16,14 +12,14 @@ PATH := /home/ucn/packages/newgcc/bin:$(PATH)
 USE_SYSTEM_BUFFER=1
 SIMULATION=0
 # Hardware setup (if not simulating)
-NBLINKSPERA3818=2 #2 Number of optical links used per A3818
-NBLINKSPERFE=2 #2 Number of optical links controlled by each frontend
-NB1720PERLINK=1 # Number of daisy-chained v1720s per optical link
-NBV1720TOTAL=2 #2 Number of v1720 boards in total
+NBLINKSPERA3818=1 #2 Number of optical links used per A3818
+NBLINKSPERFE=1 #2 Number of optical links controlled by each frontend
+NB1725PERLINK=1 # Number of daisy-chained v1720s per optical link
+NBV1725TOTAL=1 #2 Number of v1720 boards in total
 
 HWFLAGS = -DUSE_SYSTEM_BUFFER=$(USE_SYSTEM_BUFFER) \
 -DNBLINKSPERA3818=$(NBLINKSPERA3818) -DNBLINKSPERFE=$(NBLINKSPERFE) \
--DNB1720PERLINK=$(NB1720PERLINK) -DNBV1720TOTAL=$(NBV1720TOTAL)
+-DNB1725PERLINK=$(NB1725PERLINK) -DNBV1725TOTAL=$(NBV1725TOTAL)
 
 #--------------------------------------------------------------------
 # The MIDASSYS should be defined prior the use of this Makefile
@@ -134,7 +130,7 @@ all: fe
 	@echo "***** Finished"
 	@echo "***** Use 'make doc' to build documentation"
 
-fe : feoV1720.exe 
+fe : feoV1725.exe 
 
 doc ::
 	doxygen
@@ -144,40 +140,22 @@ doc ::
 # Libraries/shared stuff
 ####################################################################
 
-ov1720.o : $(MIDAS_DRV)/ov1720.c
+ov1725.o : $(MIDAS_DRV)/ov1720.c
 	$(CC) -c $(CFLAGS) $(MIDASINCS) $(CAENINCS) $< -o $@ 
 
 ####################################################################
 # Single-thread frontend
 ####################################################################
 
-feoV1720.exe: $(MIDAS_LIB)/mfe.o  feoV1720.o ov1720.o v1720CONET2.o
-	$(CXX) $(OSFLAGS) feoV1720.o v1720CONET2.o ov1720.o $(MIDAS_LIB)/mfe.o $(LIBMIDAS) $(LIBCAENCOMM) $(LIBCAENVME) $(LIBCAENDGTZ) -o $@ $(LDFLAGS)
+feoV1725.exe: $(MIDAS_LIB)/mfe.o  feoV1725.o ov1725.o v1725CONET2.o
+	$(CXX) $(OSFLAGS) feoV1725.o v1725CONET2.o ov1725.o $(MIDAS_LIB)/mfe.o $(LIBMIDAS) $(LIBCAENCOMM) $(LIBCAENVME) $(LIBCAENDGTZ) -o $@ $(LDFLAGS)
 
-feoV1720.o : feoV1720.cxx v1720CONET2.o
+feoV1725.o : feoV1725.cxx v1725CONET2.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) $(HWFLAGS) $(MIDASINCS) $(CAENINCS) -Ife -c $< -o $@
 
-v1720CONET2.o : v1720CONET2.cxx
+v1725CONET2.o : v1725CONET2.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) $(HWFLAGS) $(MIDASINCS) $(CAENINCS) -Ife -c $< -o $@
 
-
-# hv.o: $(DRV_DIR)/class/hv.c
-# 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
-
-# multi.o: $(DRV_DIR)/class/multi.c
-# 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
-
-# nulldev.o: $(DRV_DIR)/device/nulldev.c
-# 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
-
-# mscbdev.o: $(DRV_DIR)/device/mscbdev.c
-# 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
-
-# mscb.o: $(MSCB_DIR)/mscb.c
-# 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
-
-# null.o: $(DRV_DIR)/bus/null.c
-# 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
 
 .c.o:
 
@@ -194,14 +172,5 @@ clean:
 	rm -rf html
 	rm -rf stress
 
-####################################################################
-# Stress test program
-####################################################################
-stress: stress_test.c
-	$(CC) $(CFLAGS) $(CAENINCS) -o $@ $(LDFLAGS) $< $(LIBCAENCOMM) $(LIBCAENVME)
-stress2: stress_test_short.c
-	$(CC) $(CFLAGS) $(CAENINCS) -o $@ $(LDFLAGS) $< $(LIBCAENCOMM) $(LIBCAENVME)
 
-setcards: setcards.cxx
-	$(CXX) $(CFLAGS) $(CAENINCS) -o $@ $(LDFLAGS) $< $(LIBCAENCOMM) $(LIBCAENVME)
 #end file

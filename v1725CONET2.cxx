@@ -1,13 +1,13 @@
 /*****************************************************************************/
 /**
-\file v1720CONET2.cxx
+\file v1725CONET2.cxx
 
 ## Contents
 
-This file contains the class implementation for the v1720 module driver.
+This file contains the class implementation for the v1725 module driver.
  *****************************************************************************/
 
-#include "v1720CONET2.hxx"
+#include "v1725CONET2.hxx"
 #include <bitset>
 
 #define UNUSED(x) ((void)(x)) //!< Suppress compiler warnings
@@ -15,7 +15,7 @@ This file contains the class implementation for the v1720 module driver.
 using namespace std;
 
 //! Configuration string for this board. (ODB: /Equipment/[eq_name]/Settings/[board_name]/)
-const char * v1720CONET2::config_str_board[] = {\
+const char * v1725CONET2::config_str_board[] = {\
     "Acq mode = INT : 2",\
     "Software Trig Mode = INT : 0",\
     "Trig Input Mode = INT :0",\
@@ -118,7 +118,7 @@ const char * v1720CONET2::config_str_board[] = {\
     NULL
 };
 
-const char v1720CONET2::history_settings[][NAME_LENGTH] = { "eStored", "busy" };
+const char v1725CONET2::history_settings[][NAME_LENGTH] = { "eStored", "busy" };
 
 int BaselineSetValue;                  //added May 26, 2016//the target baseline that all other channels offset themselves to match
 int Base[8]={0,0,0,0,0,0,0,0};         //added May 26, 2016//the baseline of the channel before an offset is applied (used in offset eqn)
@@ -138,7 +138,7 @@ void DCOFFSETCALC(int sum1[8], int sum0[8], int moduleID, int NumEvents1[8]);
  * \param   [in]  board     Board number on the optical link
  * \param   [in]  moduleID  Unique ID assigned to module
  */
-v1720CONET2::v1720CONET2(int feindex, int link, int board, int moduleID, HNDLE hDB)
+v1725CONET2::v1725CONET2(int feindex, int link, int board, int moduleID, HNDLE hDB)
 : _feindex(feindex), _link(link), _board(board), _moduleID(moduleID), _odb_handle(hDB)
 {
   _device_handle = -1;
@@ -156,7 +156,7 @@ v1720CONET2::v1720CONET2(int feindex, int link, int board, int moduleID, HNDLE h
  *
  * Nothing to do.
  */
-v1720CONET2::~v1720CONET2()
+v1725CONET2::~v1725CONET2()
 {
 }
 
@@ -165,7 +165,7 @@ v1720CONET2::~v1720CONET2()
  *
  * \return  name string
  */
-string v1720CONET2::GetName()
+string v1725CONET2::GetName()
 {
   stringstream txt;
   txt << "F" << _feindex << _link << _board;
@@ -176,7 +176,7 @@ string v1720CONET2::GetName()
  *
  * \return  true if board is connected
  */
-bool v1720CONET2::IsConnected()
+bool v1725CONET2::IsConnected()
 {
   return (_device_handle >= 0);
 }
@@ -185,16 +185,16 @@ bool v1720CONET2::IsConnected()
  *
  * \return  true if run is started
  */
-bool v1720CONET2::IsRunning()
+bool v1725CONET2::IsRunning()
 {
   return _running;
 }
 /**
  * \brief   Connect the board through the optical link
  *
- * \return  ConnectErrorCode (see v1720CONET2.hxx)
+ * \return  ConnectErrorCode (see v1725CONET2.hxx)
  */
-v1720CONET2::ConnectErrorCode v1720CONET2::Connect()
+v1725CONET2::ConnectErrorCode v1725CONET2::Connect()
 {
   memset(&DPPConfig.Params, 0, sizeof(DigitizerParams_t));
   memset(&DPPConfig.DPPParams, 0, sizeof(CAEN_DGTZ_DPP_PSD_Params_t));
@@ -209,9 +209,9 @@ v1720CONET2::ConnectErrorCode v1720CONET2::Connect()
 /**
  * \brief   Connect the board through the optical link
  *
- * \return  ConnectErrorCode (see v1720CONET2.hxx)
+ * \return  ConnectErrorCode (see v1725CONET2.hxx)
  */
-v1720CONET2::ConnectErrorCode v1720CONET2::Connect(int connAttemptsMax, 
+v1725CONET2::ConnectErrorCode v1725CONET2::Connect(int connAttemptsMax, 
 						   int secondsBeforeTimeout)
 {
   if (verbose) cout << GetName() << "::Connect()\n";
@@ -242,21 +242,21 @@ v1720CONET2::ConnectErrorCode v1720CONET2::Connect(int connAttemptsMax,
   CAEN_DGTZ_BoardInfo_t           BoardInfo;
   zCAEN = CAEN_DGTZ_GetInfo(_device_handle, &BoardInfo);
   if (zCAEN) {
-    printf("<v1720CONET2::Connect> Can't read board info\n");
+    printf("<v1725CONET2::Connect> Can't read board info\n");
     return ConnectErrorTimeout;
   }
 
   // print type of board
-  printf("\n<v1720CONET2::Connect> Connected to CAEN Digitizer Model %s, recognized as board %d\n", 
+  printf("\n<v1725CONET2::Connect> Connected to CAEN Digitizer Model %s, recognized as board %d\n", 
 	 BoardInfo.ModelName, _board);
-  printf("<v1720CONET2::Connect> ROC FPGA Release is %s\n", BoardInfo.ROC_FirmwareRel);
-  printf("<v1720CONET2::Connect> AMC FPGA Release is %s\n", BoardInfo.AMC_FirmwareRel);
+  printf("<v1725CONET2::Connect> ROC FPGA Release is %s\n", BoardInfo.ROC_FirmwareRel);
+  printf("<v1725CONET2::Connect> AMC FPGA Release is %s\n", BoardInfo.AMC_FirmwareRel);
   
   // Check firmware revision (only DPP-PSD firmware can be used)                                 
   int MajorNumber;
   sscanf(BoardInfo.AMC_FirmwareRel, "%d", &MajorNumber);
   if (MajorNumber != 131 && MajorNumber != 132 ) {
-    printf("<v1720CONET2::Connect> This digitizer doesn't have a DPP-PSD firmware\n");
+    printf("<v1725CONET2::Connect> This digitizer doesn't have a DPP-PSD firmware\n");
     return ConnectErrorCaenComm;
   }
 
@@ -266,9 +266,9 @@ v1720CONET2::ConnectErrorCode v1720CONET2::Connect(int connAttemptsMax,
 /**
  * \brief   Disconnect the board through the optical link
  *
- * \return  ConnectErrorCode (see v1720CONET2.hxx)
+ * \return  ConnectErrorCode (see v1725CONET2.hxx)
  */
-bool v1720CONET2::Disconnect()
+bool v1725CONET2::Disconnect()
 {
   if (verbose) cout << GetName() << "::Disconnect()\n";
 
@@ -310,7 +310,7 @@ bool v1720CONET2::Disconnect()
  *
  * \return  true for success, false for fail
  */
-bool v1720CONET2::StartRun()
+bool v1725CONET2::StartRun()
 {
 
   cout << GetName() << "::StartRun()\n";
@@ -330,7 +330,7 @@ bool v1720CONET2::StartRun()
   // check if the ODB settings have been changed since the previous run
   // if so, reinitialize board with new settings
   if (_settings_touched) {
-    cm_msg(MINFO, "feoV1720", "Note: settings on board %s touched. Re-initializing board.",
+    cm_msg(MINFO, "feoV1725", "Note: settings on board %s touched. Re-initializing board.",
 	   GetName().c_str());
     cout << "reinitializing" << endl;
     InitializeForAcq();
@@ -339,7 +339,7 @@ bool v1720CONET2::StartRun()
 
   // Reset counters
   for(int i = 0; i < 8; i++) EventCounter[i] = 0;
-  gettimeofday(&v1720LastTime, NULL);
+  gettimeofday(&v1725LastTime, NULL);
 
   // save config settings to file
 
@@ -347,10 +347,10 @@ bool v1720CONET2::StartRun()
   // begin data taking
   CAEN_DGTZ_ErrorCode e = CAEN_DGTZ_SWStartAcquisition(_device_handle);
   if ( e== CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::StartRun> Acquisition Started for Link %d Board %d\n", _link, _board);
+    printf("<v1725CONET2::StartRun> Acquisition Started for Link %d Board %d\n", _link, _board);
     _running=true;
   } else {
-    printf("<v1720CONET2::StartRun> Acquisition Start FAILED for Link %d Board %d  Error %d\n", _link,  _board, e);
+    printf("<v1725CONET2::StartRun> Acquisition Start FAILED for Link %d Board %d  Error %d\n", _link,  _board, e);
     return false;
   }
 }
@@ -362,7 +362,7 @@ bool v1720CONET2::StartRun()
  *
  * \return  true for success, false for fail
  */
-bool v1720CONET2::StopRun()
+bool v1725CONET2::StopRun()
 {
   if (verbose) cout << GetName() << "::StopRun()\n";
 
@@ -381,69 +381,54 @@ bool v1720CONET2::StopRun()
   // stop data taking
   CAEN_DGTZ_ErrorCode e = CAEN_DGTZ_SWStopAcquisition(_device_handle);
   if(e == CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::StopRun> Acquisition Successfully Stopped for Link %d, Board %d\n", _link, _board);
+    printf("<v1725CONET2::StopRun> Acquisition Successfully Stopped for Link %d, Board %d\n", _link, _board);
     _running = false;
   }
   else
-    printf("<v1720CONET2::StopRun> Acquisition Stopped with Errors for Link %d, Board %d\n", _link, _board);
+    printf("<v1725CONET2::StopRun> Acquisition Stopped with Errors for Link %d, Board %d\n", _link, _board);
   return true;
 }
 
-/**
- * \brief   Setup board registers using preset (see ov1720.c:ov1720_Setup())
- *
- * Setup board registers using a preset defined in the midas file ov1720.c
- * - Mode 0x0: "Setup Skip\n"
- * - Mode 0x1: "Trigger from FP, 8ch, 1Ks, postTrigger 800\n"
- * - Mode 0x2: "Trigger from LEMO\n"
- *
- * \param   [in]  mode Configuration mode number
- * \return  CAENComm Error Code (see CAENComm.h)
- */
-CAENComm_ErrorCode v1720CONET2::SetupPreset(int mode)
-{
-  return ov1720_Setup(_device_handle, mode);
-}
 /**
  * \brief   Control data acquisition
  *
  * Write to Acquisition Control reg
  *
- * \param   [in]  operation acquisition mode (see v1720.h)
+ * \param   [in]  operation acquisition mode (see v1725.h)
  * \return  CAENComm Error Code (see CAENComm.h)
  */
-CAENComm_ErrorCode v1720CONET2::AcqCtl(uint32_t operation)
+CAENComm_ErrorCode v1725CONET2::AcqCtl(uint32_t operation)
 {
   // read in acquisition control status into register
   uint32_t reg;
   CAEN_DGTZ_ErrorCode zCAEN;
-  zCAEN = CAEN_DGTZ_ReadRegister(_device_handle, V1720_ACQUISITION_CONTROL, &reg);
+  zCAEN = CAEN_DGTZ_ReadRegister(_device_handle, V1725_ACQUISITION_CONTROL, &reg);
 
   // send command to board
   switch (operation) {
-  case V1720_RUN_START:               // begin data taking
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, (reg | 0x4));
+  case V1725_RUN_START:               // begin data taking
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, (reg | 0x4));
     break;
-  case V1720_RUN_STOP:                // stop data taking
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, (reg & ~( 0x4)));
+  case V1725_RUN_STOP:                // stop data taking
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, (reg & ~( 0x4)));
     break;
-  case V1720_REGISTER_RUN_MODE:       // set run mode
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, 0x100);
+  case V1725_REGISTER_RUN_MODE:       // set run mode
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, 0x100);
     break;
-  case V1720_SIN_RUN_MODE:            // set software trigger in
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, 0x101);
+  case V1725_SIN_RUN_MODE:            // set software trigger in
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, 0x101);
     break;
-  case V1720_SIN_GATE_RUN_MODE:       // set software trigger gate
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, 0x102);
+  case V1725_SIN_GATE_RUN_MODE:       // set software trigger gate
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, 0x102);
     break;
-  case V1720_MULTI_BOARD_SYNC_MODE:   // set sync 
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, 0x103);
+  case V1725_MULTI_BOARD_SYNC_MODE:   // set sync 
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, 0x103);
     break;
-  case V1720_COUNT_ACCEPTED_TRIGGER:  // omit pileup
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, (reg & ~( 0x8)));
+  case V1725_COUNT_ACCEPTED_TRIGGER:  // omit pileup
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, (reg & ~( 0x8)));
     break;
-  case V1720_COUNT_ALL_TRIGGER:       // count all events including pileup
-    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1720_ACQUISITION_CONTROL, (reg | 0x8));
+  case V1725_COUNT_ALL_TRIGGER:       // count all events including pileup
+    zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, V1725_ACQUISITION_CONTROL, (reg | 0x8));
     break;
   default:
     printf("operation %d not defined\n", operation);
@@ -451,18 +436,7 @@ CAENComm_ErrorCode v1720CONET2::AcqCtl(uint32_t operation)
   }
   return CAENComm_ErrorCode(zCAEN);
 }
-/**
- * \brief   Control data acquisition
- *
- * Write to Acquisition Control reg
- *
- * \param   [in]  operation acquisition mode (see v1720.h)
- * \return  CAENComm Error Code (see CAENComm.h)
- */
-CAENComm_ErrorCode v1720CONET2::ChannelConfig(uint32_t operation)
-{
-  return ov1720_ChannelConfig(_device_handle, operation);
-}
+
 
 /**
  * \brief   Read 32-bit register
@@ -471,7 +445,7 @@ CAENComm_ErrorCode v1720CONET2::ChannelConfig(uint32_t operation)
  * \param   [out] val      value read from register
  * \return  CAENComm Error Code (see CAENComm.h)
  */
-CAENComm_ErrorCode v1720CONET2::_ReadReg(DWORD address, DWORD *val)
+CAENComm_ErrorCode v1725CONET2::_ReadReg(DWORD address, DWORD *val)
 {
   if (verbose >= 2) cout << GetName() << "::ReadReg(" << hex << address << ")" << endl;
   CAEN_DGTZ_ErrorCode zCAEN = CAEN_DGTZ_ReadRegister(_device_handle, address, val);
@@ -487,7 +461,7 @@ CAENComm_ErrorCode v1720CONET2::_ReadReg(DWORD address, DWORD *val)
  * \param   [in]  val      value to write to the register
  * \return  CAENComm Error Code (see CAENComm.h)
  */
-CAENComm_ErrorCode v1720CONET2::_WriteReg(DWORD address, DWORD val)
+CAENComm_ErrorCode v1725CONET2::_WriteReg(DWORD address, DWORD val)
 {
   if (verbose >= 2) cout << GetName() << "::WriteReg(" << hex << address << "," << val << ")" << endl;
   CAEN_DGTZ_ErrorCode zCAEN = CAEN_DGTZ_WriteRegister(_device_handle, address, val);
@@ -496,12 +470,12 @@ CAENComm_ErrorCode v1720CONET2::_WriteReg(DWORD address, DWORD val)
   return CAENComm_ErrorCode(zCAEN);
 }
 
-bool v1720CONET2::ReadReg(DWORD address, DWORD *val)
+bool v1725CONET2::ReadReg(DWORD address, DWORD *val)
 {
   return (_ReadReg(address, val) == CAENComm_Success);
 }
 
-bool v1720CONET2::WriteReg(DWORD address, DWORD val)
+bool v1725CONET2::WriteReg(DWORD address, DWORD val)
 {
   return (_WriteReg(address, val) == CAENComm_Success);
 }
@@ -514,9 +488,9 @@ bool v1720CONET2::WriteReg(DWORD address, DWORD val)
  * \param   [out]  val     Number of events stored
  * \return  CAENComm Error Code (see CAENComm.h)
  */
-bool v1720CONET2::Poll(DWORD *val)
+bool v1725CONET2::Poll(DWORD *val)
 {
-  CAENComm_ErrorCode sCAEN = CAENComm_ErrorCode(CAEN_DGTZ_ReadRegister(_device_handle, V1720_EVENT_STORED, val));
+  CAENComm_ErrorCode sCAEN = CAENComm_ErrorCode(CAEN_DGTZ_ReadRegister(_device_handle, V1725_EVENT_STORED, val));
   return (sCAEN == CAENComm_Success);
 }
 
@@ -533,7 +507,7 @@ bool v1720CONET2::Poll(DWORD *val)
  * \param   [out]  dwords_read  Number of DWORDs read from the buffer
  * \return  CAENComm Error Code (see CAENComm.h)
  */
-bool v1720CONET2::FillEventBank(char * pevent)
+bool v1725CONET2::FillEventBank(char * pevent)
 {
   //printf("* ");
   // check if board is connected
@@ -544,7 +518,7 @@ bool v1720CONET2::FillEventBank(char * pevent)
   
   // Double checking that board is ready to read
   //DWORD vmeStat;
-  //this->ReadReg(V1720_VME_STATUS, &vmeStat);
+  //this->ReadReg(V1725_VME_STATUS, &vmeStat);
   //if(!(vmeStat & 0x1))
   // return true;
 
@@ -564,7 +538,7 @@ bool v1720CONET2::FillEventBank(char * pevent)
   ret = CAEN_DGTZ_ReadData(_device_handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
   //ret = CAEN_DGTZ_ReadData(_device_handle, CAEN_DGTZ_POLLING_2eSST, buffer, &BufferSize);
   if (ret) {
-    printf("<v1720CONET::FillEventBank> Readout Error %d\n",ret);
+    printf("<v1725CONET::FillEventBank> Readout Error %d\n",ret);
     exit(0);
     //return false;    
   }
@@ -574,7 +548,7 @@ bool v1720CONET2::FillEventBank(char * pevent)
   // read in DPP data
   ret = CAEN_DGTZ_GetDPPEvents(_device_handle, buffer, BufferSize, (void**)Events, NumEvents);
   if (ret) {
-    //printf("<v1720CONET2::FillEventBank> Data Error: %d\n", ret);
+    //printf("<v1725CONET2::FillEventBank> Data Error: %d\n", ret);
     return false;
   }
 
@@ -731,7 +705,7 @@ bool v1720CONET2::FillEventBank(char * pevent)
  *
  * \return  CAENComm Error Code (see CAENComm.h)
  */
-bool v1720CONET2::SendTrigger()
+bool v1725CONET2::SendTrigger()
 {
   if (verbose) cout << GetName() << "::SendTrigger()" << endl;
   if (!IsConnected()) {
@@ -741,35 +715,35 @@ bool v1720CONET2::SendTrigger()
 
   if (verbose) cout << "Sending Trigger (l,b) = (" << _link << "," << _board << ")" << endl;
 
-  return (WriteReg(V1720_SW_TRIGGER, 0x1) == CAENComm_Success);
+  return (WriteReg(V1725_SW_TRIGGER, 0x1) == CAENComm_Success);
 }
 /**
  * \brief   Set the ODB record for this board
  *
  * Create a record for the board with settings from the configuration
- * string (v1720CONET2::config_str_board) if it doesn't exist or merge with
+ * string (v1725CONET2::config_str_board) if it doesn't exist or merge with
  * existing record. Create hotlink with callback function for when the
  * record is updated.  Get the handle to the record.
  *
  * Ex: For a frontend with index number 2 and board number 0, this
  * record will be created/merged:
  *
- * /Equipment/Li6_Detector/Settings/Module0
+ * /Equipment/UCN_Detector/Settings/Module0
  *
  * \param   [in]  h        main ODB handle
  * \param   [in]  cb_func  Callback function to call when record is updated
  * \return  ODB Error Code (see midas.h)
  */
-int v1720CONET2::SetBoardRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
+int v1725CONET2::SetBoardRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
 {
   char set_str[500];
 
   // if _feindex == -1, no index supplied; assume 1 frontend for all boards
   // else set up the number of modules with the _feindex supplies
   if(_feindex == -1)
-    sprintf(set_str, "/Equipment/Li6_Detector/Settings/Module%d", _moduleID);
+    sprintf(set_str, "/Equipment/UCN_Detector/Settings/Module%d", _moduleID);
   else
-    sprintf(set_str, "/Equipment/Li6_Detector%02d/Settings/Module%d", _feindex, _moduleID);
+    sprintf(set_str, "/Equipment/UCN_Detector%02d/Settings/Module%d", _feindex, _moduleID);
 
   if (verbose) cout << GetName() << "::SetBoardRecord(" << h << "," << set_str << ",...)" << endl;
   int status,size;
@@ -787,7 +761,7 @@ int v1720CONET2::SetBoardRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
   if (status != DB_SUCCESS) cm_msg(MINFO,"FE","Key %s not found", set_str);
 
   //hotlink
-  size = sizeof(V1720_CONFIG_SETTINGS);
+  size = sizeof(V1725_CONFIG_SETTINGS);
   printf("size: %d\n", size);
   status = db_open_record(h, _settings_handle, &config, size, MODE_READ, cb_func, NULL);
 
@@ -807,7 +781,7 @@ int v1720CONET2::SetBoardRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
  * \param   [in]  cb_func  Callback function to call when record is updated
  * \return  ODB Error Code (see midas.h)
  */
-int v1720CONET2::SetHistoryRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
+int v1725CONET2::SetHistoryRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
 {
   char settings_path[200] = "/Equipment/BUFLVL/Settings/";
 
@@ -863,7 +837,7 @@ int v1720CONET2::SetHistoryRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
  *
  * \return  0 on success, -1 on error
  */
-int v1720CONET2::InitializeForAcq()
+int v1725CONET2::InitializeForAcq()
 {
   CAEN_DGTZ_ErrorCode ret;
   
@@ -942,7 +916,7 @@ int v1720CONET2::InitializeForAcq()
     return -1;    }
 
 
-  cm_msg(MINFO,"feoV1720","### In InitializeForAcq, _settings_loaded: %d, _settings_touched: %d",
+  cm_msg(MINFO,"feoV1725","### In InitializeForAcq, _settings_loaded: %d, _settings_touched: %d",
 	 _settings_loaded, _settings_touched);
 
   // don't do anything if settings haven't been changed
@@ -1017,7 +991,7 @@ int v1720CONET2::InitializeForAcq()
   ret = CAEN_DGTZ_SetDPPAcquisitionMode(_device_handle, DPPConfig.Params.AcqMode, 
 					CAEN_DGTZ_DPP_SAVE_PARAM_EnergyAndTime);
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPPAcquisitionMode %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPPAcquisitionMode %d\n",ret);
     printf("%d\n",_device_handle);
     return (int)ret;
   }
@@ -1044,13 +1018,13 @@ int v1720CONET2::InitializeForAcq()
   // see CAENDigitizer user manual, chapter "Trigger configuration" for details 
   ret = CAEN_DGTZ_SetExtTriggerInputMode(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.trig_input_mode);
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetExtTriggerInputMode %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetExtTriggerInputMode %d\n",ret);
     return (int)ret;
   }
   
   ret = CAEN_DGTZ_SetSWTriggerMode(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.sw_trig_mode );
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetSWTriggerMode %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetSWTriggerMode %d\n",ret);
     return (int)ret;
   }
 
@@ -1061,7 +1035,7 @@ int v1720CONET2::InitializeForAcq()
     //re = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 512);
     ret = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 0);
     if (ret != CAEN_DGTZ_Success) {
-      printf("<v1720CONET2::InitializeForAcq> ~~~ ! Error in CAEN_DGTZ_SetDPPEventAggregation %d\n",ret);
+      printf("<v1725CONET2::InitializeForAcq> ~~~ ! Error in CAEN_DGTZ_SetDPPEventAggregation %d\n",ret);
       return (int)ret; 
     }
   }
@@ -1072,7 +1046,7 @@ int v1720CONET2::InitializeForAcq()
   for (int ich=0; ich<8; ich++){
     ret = CAEN_DGTZ_SetChannelSelfTrigger(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.DPPSelfTrig[ich], chmask);
     if (ret != CAEN_DGTZ_Success) {
-      printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelSelfTrigger ch=%d mask=%d selftrig=%d retval=\n",ich, chmask, config.DPPSelfTrig[ich], ret);
+      printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelSelfTrigger ch=%d mask=%d selftrig=%d retval=\n",ich, chmask, config.DPPSelfTrig[ich], ret);
       return (int)ret;
     }
     chmask <<= 1;
@@ -1080,16 +1054,16 @@ int v1720CONET2::InitializeForAcq()
 
   // Set the enabled channels
   ret = CAEN_DGTZ_SetChannelEnableMask(_device_handle, DPPConfig.Params.ChannelMask);  
-  std::cout << " V1720 enable mask : " << DPPConfig.Params.ChannelMask << " " << _link << std::endl;
+  std::cout << " V1725 enable mask : " << DPPConfig.Params.ChannelMask << " " << _link << std::endl;
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelEnableMask %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelEnableMask %d\n",ret);
     return (int)ret;
   }
 
   // Set post trigger fraction (as a percentage)
   ret = CAEN_DGTZ_SetPostTriggerSize(_device_handle, config.post_trigger);
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetPostTriggerSize %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetPostTriggerSize %d\n",ret);
     return (int)ret;
   }
     
@@ -1102,7 +1076,7 @@ int v1720CONET2::InitializeForAcq()
   // Note that this sets all of the settings in DPPConfig.DPPParams!
   ret = CAEN_DGTZ_SetDPPParameters(_device_handle, config.channel_mask, &DPPConfig.DPPParams);
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPPParameters %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPPParameters %d\n",ret);
     return (int)ret;
   }
 
@@ -1123,13 +1097,13 @@ int v1720CONET2::InitializeForAcq()
       // Set the Pre-Trigger size (in samples)                                                                    
       retval |= CAEN_DGTZ_SetDPPPreTriggerSize(_device_handle, i, config.PreTriggerSize[i]); 
       if(retval)
-	printf("<v1720CONET2::InitializeForAcq> Error setting DPPPreTriggerSize %d\n",retval);
+	printf("<v1725CONET2::InitializeForAcq> Error setting DPPPreTriggerSize %d\n",retval);
       
       // Set the polarity for the given channel (CAEN_DGTZ_PulsePolarityPositive or 
       // CAEN_DGTZ_PulsePolarityNegative)
       retval |= CAEN_DGTZ_SetChannelPulsePolarity(_device_handle, i, DPPConfig.Params.PulsePolarity);
       if(retval)
-	printf("<v1720CONET2::InitializeForAcq> Error setting ChannelPulsePolarity %d\n",retval);
+	printf("<v1725CONET2::InitializeForAcq> Error setting ChannelPulsePolarity %d\n",retval);
     }
   } // end for
   
@@ -1181,7 +1155,7 @@ int v1720CONET2::InitializeForAcq()
    					  CAEN_DGTZ_DPP_PSD_DIGITALPROBE1_R6_ExtTrg,
    					  CAEN_DGTZ_DPP_PSD_DIGITALPROBE2_R6_OverThr);
   if (ret != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPP_PSD_VirtualProbe %d\n",ret);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPP_PSD_VirtualProbe %d\n",ret);
     return (int)retval;
   }
 
@@ -1254,7 +1228,7 @@ int v1720CONET2::InitializeForAcq()
 
 
 
-  //// set number of aggregates in the v1720 memory (see multi-event memory organization in 1720 manual)
+  //// set number of aggregates in the v1725 memory (see multi-event memory organization in 1725 manual)
   WriteReg(0x800C, 0x7);
   //// set number of events per aggregate
   WriteReg(0x8034, 0x1);
@@ -1277,26 +1251,26 @@ int v1720CONET2::InitializeForAcq()
   uint32_t AllocatedSize = 0;
   buffer = NULL;
   retval = CAEN_DGTZ_MallocReadoutBuffer(_device_handle, &buffer, &AllocatedSize);
-  printf("<v1720CONET2::InitializeForAcq> readout buffer malloced size=%d\n",AllocatedSize);
+  printf("<v1725CONET2::InitializeForAcq> readout buffer malloced size=%d\n",AllocatedSize);
   if (retval != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocReadoutBuffer %d\n",retval);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocReadoutBuffer %d\n",retval);
     return (int)retval;
   }
 
   /* Allocate memory for the events */
   retval |= CAEN_DGTZ_MallocDPPEvents(_device_handle, (void**)Events, &AllocatedSize); 
-  printf("<v1720CONET2::InitializeForAcq> dpp events malloced size=%d\n",AllocatedSize);
+  printf("<v1725CONET2::InitializeForAcq> dpp events malloced size=%d\n",AllocatedSize);
   if (retval != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocDPPEvents %d\n",retval);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocDPPEvents %d\n",retval);
     return (int)retval;
   }
 
   /* Allocate memory for the waveforms */
   retval |= CAEN_DGTZ_MallocDPPWaveforms(_device_handle, (void**)&Waveform, &AllocatedSize); 
-  printf("<v1720CONET2::InitializeForAcq> waveforms malloced size=%d\n",AllocatedSize);
+  printf("<v1725CONET2::InitializeForAcq> waveforms malloced size=%d\n",AllocatedSize);
 
   if (retval != CAEN_DGTZ_Success) {
-    printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocDPPWaveforms %d\n",retval);
+    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocDPPWaveforms %d\n",retval);
     return (int)retval;
   }
   
@@ -1328,7 +1302,7 @@ int v1720CONET2::InitializeForAcq()
     }
   }
 
-  /// Check if bits[1:0] of register 0x8100 so see what acquisition mode is used. See v1720
+  /// Check if bits[1:0] of register 0x8100 so see what acquisition mode is used. See v1725
   /// user manual pg 25.
   if (verbose){
     ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8100, &reg4);
@@ -1361,7 +1335,7 @@ int v1720CONET2::InitializeForAcq()
  *
  * \param   [in]  aChannelConfig  Channel configuration (32-bit)
  */
-std::string v1720CONET2::GetChannelConfig(DWORD aChannelConfig){
+std::string v1725CONET2::GetChannelConfig(DWORD aChannelConfig){
 	
   // Set Device, data type and packing for QT calculation later
   int dataType = ((aChannelConfig >> 11) & 0x1);
@@ -1390,7 +1364,7 @@ std::string v1720CONET2::GetChannelConfig(DWORD aChannelConfig){
       return std::string("ZLE Data");
     } 
   } else
-    return std::string("V1720 Data format Unrecognised");
+    return std::string("V1725 Data format Unrecognised");
 }
 
 /**
@@ -1400,12 +1374,12 @@ std::string v1720CONET2::GetChannelConfig(DWORD aChannelConfig){
  *
  * \return  true if data is ZLE
  */
-BOOL v1720CONET2::IsZLEData(){
+BOOL v1725CONET2::IsZLEData(){
   return mZLE;
 }
 
 
-void v1720CONET2::PrintSettings(){
+void v1725CONET2::PrintSettings(){
 
     // // DPP settings
     // INT recordLen;                     //separate from SetDPPParameters
@@ -1424,31 +1398,31 @@ void v1720CONET2::PrintSettings(){
 
   CAEN_DGTZ_ErrorCode retval;
 
-  printf("v1720CONET2::PrintSettings vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
+  printf("v1725CONET2::PrintSettings vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
   CAEN_DGTZ_AcqMode_t amode;
   retval = CAEN_DGTZ_GetAcquisitionMode(_device_handle,&amode);
   if (retval != CAEN_DGTZ_Success) 
-    printf("<v1720CONET2::Print> Error in GetAcquisitionMode %d\n",retval);
+    printf("<v1725CONET2::Print> Error in GetAcquisitionMode %d\n",retval);
   printf("acq_mode           Set = %08d Read = %08d\n",config.acq_mode,amode);     
   uint32_t achanmask;
   retval = CAEN_DGTZ_GetChannelEnableMask(_device_handle, &achanmask);  
   if (retval != CAEN_DGTZ_Success) 
-    printf("<v1720CONET2::Print> Error in GetChannelEnableMask %d\n",retval);
+    printf("<v1725CONET2::Print> Error in GetChannelEnableMask %d\n",retval);
   printf("channel_mask       Set = %08d Read = %08d\n",config.channel_mask, achanmask);
   CAEN_DGTZ_TriggerMode_t aswtrigmode;
   retval = CAEN_DGTZ_GetSWTriggerMode(_device_handle, &aswtrigmode );
   if (retval != CAEN_DGTZ_Success) 
-    printf("<v1720CONET2::Print> Error in GetSWTriggerMode %d\n",retval);
+    printf("<v1725CONET2::Print> Error in GetSWTriggerMode %d\n",retval);
   printf("sw_trig_mode       Set = %08d Read = %08d\n",config.sw_trig_mode, aswtrigmode);
   CAEN_DGTZ_TriggerMode_t atriginputmode;
   retval = CAEN_DGTZ_GetExtTriggerInputMode(_device_handle, &atriginputmode);
   if (retval != CAEN_DGTZ_Success) 
-    printf("<v1720CONET2::Print> Error in GetExtTriggerInputMode %d\n",retval);
+    printf("<v1725CONET2::Print> Error in GetExtTriggerInputMode %d\n",retval);
   printf("trig_input_mode    Set = %08d Read = %08d\n",config.trig_input_mode, aswtrigmode);
   uint32_t aposttrig;           
   retval = CAEN_DGTZ_GetPostTriggerSize(_device_handle, &aposttrig);
   if (retval != CAEN_DGTZ_Success) 
-    printf("<v1720CONET2::Print> Error in GetPostTriggerSize %d\n",retval);
+    printf("<v1725CONET2::Print> Error in GetPostTriggerSize %d\n",retval);
 
   printf("post_trigger       Set = %08d Read = %08d\n",config.post_trigger, aposttrig);
 
@@ -1471,7 +1445,7 @@ void v1720CONET2::PrintSettings(){
     uint32_t adcoffset;
     retval = CAEN_DGTZ_GetChannelDCOffset(_device_handle, i, &adcoffset);
     if (retval != CAEN_DGTZ_Success) {
-      printf("<v1720CONET2::Print> Error in GetChannelDCOffset %d\n",retval);
+      printf("<v1725CONET2::Print> Error in GetChannelDCOffset %d\n",retval);
     }
     printf("  dcoffset       Set = %08d Read = %08d\n",config.DCoffset[i], adcoffset);
     uint32_t pretrigsize;
@@ -1480,24 +1454,24 @@ void v1720CONET2::PrintSettings(){
 
   }
 
-  printf("v1720CONET2::PrintSettings ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+  printf("v1725CONET2::PrintSettings ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 
   return;
 
 }
 
-void v1720CONET2::SaveSettings(){
+void v1725CONET2::SaveSettings(){
 
   string output = "";
   char *ptr;
 
   CAEN_DGTZ_ErrorCode retval;
 
-  output += "v1720CONET2::SaveSettings vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n";
+  output += "v1725CONET2::SaveSettings vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n";
   CAEN_DGTZ_AcqMode_t amode;
   retval = CAEN_DGTZ_GetAcquisitionMode(_device_handle,&amode);
   if (retval != CAEN_DGTZ_Success) {
-    sprintf(ptr,"<v1720CONET2::Print> Error in GetAcquisitionMode %d\n",retval);
+    sprintf(ptr,"<v1725CONET2::Print> Error in GetAcquisitionMode %d\n",retval);
     output += std::string(ptr);
   }
   sprintf(ptr,"acq_mode           Set = %08d Read = %08d\n",config.acq_mode,amode );  
@@ -1506,7 +1480,7 @@ void v1720CONET2::SaveSettings(){
   uint32_t achanmask;
   retval = CAEN_DGTZ_GetChannelEnableMask(_device_handle, &achanmask);  
   if (retval != CAEN_DGTZ_Success) {
-    sprintf(ptr,"<v1720CONET2::Print> Error in GetChannelEnableMask %d\n",retval);
+    sprintf(ptr,"<v1725CONET2::Print> Error in GetChannelEnableMask %d\n",retval);
     output += std::string(ptr);
   }
   sprintf(ptr,"channel_mask       Set = %08d Read = %08d\n",config.channel_mask, achanmask); 
@@ -1515,7 +1489,7 @@ void v1720CONET2::SaveSettings(){
   CAEN_DGTZ_TriggerMode_t aswtrigmode;
   retval = CAEN_DGTZ_GetSWTriggerMode(_device_handle, &aswtrigmode );
   if (retval != CAEN_DGTZ_Success) { 
-    sprintf(ptr,"<v1720CONET2::Print> Error in GetSWTriggerMode %d\n",retval);
+    sprintf(ptr,"<v1725CONET2::Print> Error in GetSWTriggerMode %d\n",retval);
     output += std::string(ptr); 
   }
   sprintf(ptr,"sw_trig_mode       Set = %08d Read = %08d\n",config.sw_trig_mode, aswtrigmode);
@@ -1525,7 +1499,7 @@ void v1720CONET2::SaveSettings(){
   CAEN_DGTZ_TriggerMode_t atriginputmode;
   retval = CAEN_DGTZ_GetExtTriggerInputMode(_device_handle, &atriginputmode);
   if (retval != CAEN_DGTZ_Success) { 
-    sprintf(ptr,"<v1720CONET2::Print> Error in GetExtTriggerInputMode %d\n",retval);
+    sprintf(ptr,"<v1725CONET2::Print> Error in GetExtTriggerInputMode %d\n",retval);
     output += std::string(ptr);
   }  
   sprintf(ptr,"trig_input_mode    Set = %08d Read = %08d\n",config.trig_input_mode, aswtrigmode);
@@ -1535,7 +1509,7 @@ void v1720CONET2::SaveSettings(){
   uint32_t aposttrig;           
   retval = CAEN_DGTZ_GetPostTriggerSize(_device_handle, &aposttrig);
   if (retval != CAEN_DGTZ_Success) {
-    sprintf(ptr,"<v1720CONET2::Print> Error in GetPostTriggerSize %d\n",retval);
+    sprintf(ptr,"<v1725CONET2::Print> Error in GetPostTriggerSize %d\n",retval);
     output += std::string(ptr);
   }
   sprintf(ptr,"post_trigger       Set = %08d Read = %08d\n",config.post_trigger, aposttrig);
@@ -1571,7 +1545,7 @@ void v1720CONET2::SaveSettings(){
     uint32_t adcoffset;
     retval = CAEN_DGTZ_GetChannelDCOffset(_device_handle, i, &adcoffset);
     if (retval != CAEN_DGTZ_Success) {
-      sprintf(ptr,"<v1720CONET2::Print> Error in GetChannelDCOffset %d\n",retval);
+      sprintf(ptr,"<v1725CONET2::Print> Error in GetChannelDCOffset %d\n",retval);
       output += std::string(ptr);
     }
     sprintf(ptr,"  dcoffset       Set = %08d Read = %08d\n",config.DCoffset[i], adcoffset);
@@ -1583,7 +1557,7 @@ void v1720CONET2::SaveSettings(){
     output += std::string(ptr);
   }
 
-  sprintf(ptr,"v1720CONET2::PrintSettings ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+  sprintf(ptr,"v1725CONET2::PrintSettings ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
   output += std::string(ptr);
 
   printf("%s",output.c_str());
@@ -1593,7 +1567,7 @@ void v1720CONET2::SaveSettings(){
 }
 
 
-bool v1720CONET2::FillBufferLevelBank(char * pevent)
+bool v1725CONET2::FillBufferLevelBank(char * pevent)
 {
   if (! this->IsConnected()) {
     cm_msg(MERROR,"FillBufferLevelBank","Board %d disconnected", this->GetModuleID());
@@ -1612,9 +1586,9 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
   //ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
   CAEN_DGTZ_ErrorCode ret;
 
-  //Get v1720 buffer level
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1720_EVENT_STORED, &eStored);
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1720_ALMOST_FULL_LEVEL, &almostFull);
+  //Get v1725 buffer level
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1725_EVENT_STORED, &eStored);
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1725_ALMOST_FULL_LEVEL, &almostFull);
   ret = CAEN_DGTZ_ReadRegister(_device_handle,0x800C, &nagg);
   ret = CAEN_DGTZ_ReadRegister(_device_handle,0x8034, &nepa);
   ret = CAEN_DGTZ_ReadRegister(_device_handle,0x8104, &status);
@@ -1625,7 +1599,7 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
   // save if any buffers are full
   *pdata++ = (status & 0x8) >> 3;
 
-  if(verbose)  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1720_EVENT_STORED, V1720_ALMOST_FULL_LEVEL, nepa, status);
+  if(verbose)  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1725_EVENT_STORED, V1725_ALMOST_FULL_LEVEL, nepa, status);
 
   bk_close(pevent, pdata);
 
@@ -1636,7 +1610,7 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
   struct timeval nowTime;  
   gettimeofday(&nowTime, NULL);
   
-  double dtime = nowTime.tv_sec - v1720LastTime.tv_sec + (nowTime.tv_usec - v1720LastTime.tv_usec)/1000000.0;
+  double dtime = nowTime.tv_sec - v1725LastTime.tv_sec + (nowTime.tv_usec - v1725LastTime.tv_usec)/1000000.0;
   if(verbose) printf("Rates: ");
   float total_rate = 0;
   for(int i = 0; i < 8; i++){
@@ -1651,7 +1625,7 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
   }
   *pdata2++ = total_rate; // save the total rate for the board as well.
   if(verbose) printf(" %f \n",total_rate);
-  gettimeofday(&v1720LastTime, NULL);
+  gettimeofday(&v1725LastTime, NULL);
 
   bk_close(pevent, pdata2);
 
@@ -1659,3 +1633,4 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
   return bk_size(pevent);
 
 }
+

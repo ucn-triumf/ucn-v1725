@@ -1,14 +1,14 @@
 /*****************************************************************************/
 /**
-\file v1720CONET2.hxx
+\file v1725CONET2.hxx
 
 ## Contents
 
-This file contains the class definition for the v1720 module driver.
+This file contains the class definition for the v1725 module driver.
  *****************************************************************************/
 
-#ifndef V1720_HXX_INCLUDE
-#define V1720_HXX_INCLUDE
+#ifndef V1725_HXX_INCLUDE
+#define V1725_HXX_INCLUDE
 
 #define MaxNChannels 8
 #define MAXNBITS 12
@@ -27,7 +27,7 @@ This file contains the class definition for the v1720 module driver.
 
 extern "C" {
 #include "CAENComm.h"
-#include "ov1720drv.h"
+#include "ov1725drv.h"
 #include <CAENDigitizer.h>
 }
 //#include "TUCNAnaManager3.h"
@@ -62,7 +62,7 @@ typedef struct
 
 
 /**
- * Driver class for the v1720 module using the CAEN CONET2 (optical) interface.
+ * Driver class for the v1725 module using the CAEN CONET2 (optical) interface.
  * Contains all the methods necessary to:
  *
  * - Connect/disconnect the board through an optical connection
@@ -72,7 +72,7 @@ typedef struct
  * - Handle ZLE data
  * - Send a software trigger to the board if desired
  */
-class v1720CONET2
+class v1725CONET2
 {
 private:
   int _feindex,           //!< Frontend index number
@@ -88,7 +88,7 @@ private:
   bool _running;          //!< Run in progress
 
   int EventCounter[8];    //!< save the number of events for each channel; 
-  timeval v1720LastTime;  //!< timestamp for the last reset
+  timeval v1725LastTime;  //!< timestamp for the last reset
 
   /* Buffers to store the data. The memory must be allocated using the appropriate
      CAENDigitizer API functions (see below), so they must not be initialized here
@@ -102,8 +102,6 @@ private:
 
   // Methods for internal use
   CAENComm_ErrorCode AcqCtl(uint32_t);
-  CAENComm_ErrorCode SetupPreset(int);
-  CAENComm_ErrorCode ChannelConfig(uint32_t);
   CAENComm_ErrorCode _ReadReg(DWORD, DWORD*);
   CAENComm_ErrorCode _WriteReg(DWORD, DWORD);
 
@@ -130,8 +128,8 @@ public:
                 //!< 2: very verbose
 void SaveSettings();
 
-  v1720CONET2(int feindex, int link, int board, int moduleID, HNDLE hDB);
-  ~v1720CONET2();
+  v1725CONET2(int feindex, int link, int board, int moduleID, HNDLE hDB);
+  ~v1725CONET2();
 
   enum ConnectErrorCode
   {
@@ -185,8 +183,8 @@ void SaveSettings();
   int GetFEIndex() { return _feindex; }   //!< returns frontend index
 
 
-  //! Settings structure for this v1720 module
-  struct V1720_CONFIG_SETTINGS {
+  //! Settings structure for this v1725 module
+  struct V1725_CONFIG_SETTINGS {
     INT       acq_mode;                //!< 0x8100@[ 1.. 0]
     INT       sw_trig_mode;  // software trigger mode
     INT       trig_input_mode; // trigger mode (per channel, or external, or both)
@@ -236,4 +234,4 @@ void SaveSettings();
 
 };
 
-#endif // V1720_HXX_INCLUDE
+#endif // V1725_HXX_INCLUDE

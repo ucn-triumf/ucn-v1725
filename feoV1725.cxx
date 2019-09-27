@@ -1,12 +1,12 @@
 /*****************************************************************************/
 /**
-\file feoV1720.cxx
+\file feoV1725.cxx
 
 \mainpage
 
 \section contents Contents
 
-Standard Midas Frontend for Optical access to the CAEN v1720 using the A3818 CONET2 driver
+Standard Midas Frontend for Optical access to the CAEN v1725 using the A3818 CONET2 driver
 
 \subsection organization File organization
 
@@ -39,84 +39,6 @@ occations:
 
 - resume_run:     When a run is resumed. Should enable trigger events.
 
-\subsection notes Notes about this frontend
-
-This frontend has been designed so that it should compile and work
-by default without actual actual access to v1720 hardware. We have turned
-off portions of code which make use of the driver to the actual hardware.
-Where data acquisition should be performed, we generate random data instead
-(see v1720CONET2::ReadEvent()). See usage below to use real hardware.
-
-The simulation code assumes the following setup:
-- 1 frontend only
-- Arbitrary number of v1720 modules
-- Event builder not used
-
-The code to use real hardware assumes this setup:
-- 1 A3818 PCI-e board per PC to receive optical connections
-- NBLINKSPERA3818 links per A3818 board
-- NBLINKSPERFE optical links controlled by each frontend
-- NB1720PERLINK v1720 modules per optical link (daisy chained)
-- NBV1720TOTAL v1720 modules in total
-- The event builder mechanism is used
-
-\subsection usage Usage
-
-\subsubsection simulation Simulation
-Simply set the Nv1720 macro below to the number of boards you wish to simulate,
-compile and run:
-    make SIMULATION=1
-    ./feoV1720.exe
-
-\subsubsection real Real hardware
-Adjust NBLINKSPERA3818, NBLINKSPERFE, NB1720PERLINK and NBV1720TOTAL below according
-to your setup.  NBV1720TOTAL / (NBLINKSPERFE * NB1720PERLINK) frontends
-must be started in total. When a frontend is started, it must be assigned an index
-number:
-
-    ./frontend -i 0
-
-If no index number is supplied, it is assumed that only 1 frontend is used to control
-all boards on all links on that computer.
-
-For example, consider the following setup:
-
-    NBLINKSPERA3818    4     // Number of optical links used per A3818
-    NBLINKSPERFE       2     // Number of optical links controlled by each frontend
-    NB1720PERLINK      2     // Number of daisy-chained v1720s per optical link
-    NBV1720TOTAL       32    // Number of v1720 boards in total
-
-We will need 32/(2*2) = 8 frontends (8 indexes; from 0 to 7).  Each frontend
-controls 2*2 = 4 v1720 boards.  Compile and run:
-
-    make SIMULATION=0
-    ./feoV1720.exe
-
-
-
-\section deap UCN-3600 notes
-
-MIDAS_SERVER_HOST should be set to deap00:7071. Otherwise frontends will require the 
-option -h deap00:7071
-
-Each frontend will only access one link. To access all boards they 
-should be run four times on each computer with each of the four indexes.
-
-\subsection deapusage Usage
-
-- on deap01: ./bin/feoV1720.exe -i [ 0, 1, 2, 3 ]
-- on deap02: ./bin/feoV1720.exe -i [ 4, 5, 6, 7 ]
-- on deap03: ./bin/feoV1720.exe -i [ 8, 9, 10, 11 ]
-- on deap04: ./bin/feoV1720.exe -i [ 12, 13, 14, 15 ]
-
-\subsection deapfiles Files
-
-- feoV1720.cxx : Main front-end user code
-- v1720CONET2.hxx / v1720CONET2.cxx : Driver class for the v1720 module
-  using the CAEN CONET2 (optical) interface
-
-
-$Id: feov1720.cxx 128 2011-05-12 06:26:34Z alex $
  *****************************************************************************/
 
 #include <stdio.h>
@@ -133,25 +55,25 @@ using  std::vector;
 
 extern "C" {
 #include "CAENComm.h"
-#include "ov1720drv.h"
+#include "ov1725drv.h"
 }
 
-#include "v1720CONET2.hxx"
+#include "v1725CONET2.hxx"
 
 // __________________________________________________________________
-// --- General feov1720 parameters
+// --- General feov1725 parameters
 
 #ifndef NBLINKSPERA3818
-#define NBLINKSPERA3818   2   //!< Number of optical links used per A3818
-#define NBLINKSPERFE      2   //!< Number of optical links controlled by each frontend
-#define NB1720PERLINK     1   //!< Number of daisy-chained v1720s per optical link
-#define NBV1720TOTAL      2   //!< Number of v1720 boards in total
+#define NBLINKSPERA3818   1   //!< Number of optical links used per A3818
+#define NBLINKSPERFE      1   //!< Number of optical links controlled by each frontend
+#define NB1725PERLINK     1   //!< Number of daisy-chained v1725s per optical link
+#define NBV1725TOTAL      1   //!< Number of v1725 boards in total
 #endif
 
 #define  EQ_EVID   1                //!< Event ID
 #define  EQ_TRGMSK 0                //!< Trigger mask
 
-#define  FE_NAME   "feov1720I"       //!< Frontend name
+#define  FE_NAME   "feov1725I"       //!< Frontend name
 
 #define SLEEP_TIME_BETWEEN_CONNECTS 50 // in milliseconds
 
@@ -212,7 +134,7 @@ INT read_buffer_level(char *pevent, INT off);
 EQUIPMENT equipment[] =
 {
   {
-    "Li6_Detector",            /* equipment name */
+    "UCN_Detector",            /* equipment name */
     {
       EQ_EVID, EQ_TRGMSK,     /* event ID, trigger mask */
       //      //Use this to make different frontends (indexes) write
@@ -266,8 +188,8 @@ EQUIPMENT equipment[] =
 }
 #endif
 
-vector<v1720CONET2> ov1720; //!< objects for the v1720 modules controlled by this frontend
-vector<v1720CONET2>::iterator itv1720;  //!< iterator
+vector<v1725CONET2> ov1725; //!< objects for the v1725 modules controlled by this frontend
+vector<v1725CONET2>::iterator itv1725;  //!< iterator
 
 
 /********************************************************************/
@@ -286,10 +208,10 @@ vector<v1720CONET2>::iterator itv1720;  //!< iterator
 void seq_callback(INT hDB, INT hseq, void *info){
   KEY key;
 
-  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720) {
-    if (hseq == itv1720->GetSettingsHandle()){
+  for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725) {
+    if (hseq == itv1725->GetSettingsHandle()){
       db_get_key(hDB, hseq, &key);
-      itv1720->SetSettingsTouched(true);
+      itv1725->SetSettingsTouched(true);
       printf("Settings %s touched. Changes will take effect at start of next run.\n", key.name);
     }
   }
@@ -314,45 +236,45 @@ INT frontend_init(){
   // --- Suppress watchdog for PICe for now
   cm_set_watchdog_params(FALSE, 0);
 
-  int nExpected = 0; //Number of v1720 boards we expect to activate
-  int nActive = 0;   //Number of v1720 boards activated at the end of frontend_init
-  std::vector<std::pair<int,int> > errBoards;  //v1720 boards which we couldn't connect to
+  int nExpected = 0; //Number of v1725 boards we expect to activate
+  int nActive = 0;   //Number of v1725 boards activated at the end of frontend_init
+  std::vector<std::pair<int,int> > errBoards;  //v1725 boards which we couldn't connect to
 
   // If no index was supplied on the command-line, assume 1 frontend
   // to control all the links and boards
   if(feIndex == -1){
-    nExpected = NB1720PERLINK*NBLINKSPERA3818;
+    nExpected = NB1725PERLINK*NBLINKSPERA3818;
 
     printf("<<< No index supplied! Assuming only 1 frontend only and starting all boards on all links\n");
-    printf("    nExpected=%d  nPerLink=%d  nPer3818=%d\n",nExpected,NB1720PERLINK, NBLINKSPERA3818);
+    printf("    nExpected=%d  nPerLink=%d  nPer3818=%d\n",nExpected,NB1725PERLINK, NBLINKSPERA3818);
     for (int iLink=0; iLink < NBLINKSPERA3818; iLink++)
     {
-      for (int iBoard=0; iBoard < NB1720PERLINK; iBoard++)
+      for (int iBoard=0; iBoard < NB1725PERLINK; iBoard++)
       {
         printf("<<< Begin of Init \n link:%i, board:%i\n", iLink, iBoard);
 
         // Compose unique module ID
-        int moduleID = iLink*NB1720PERLINK + iBoard;
+        int moduleID = iLink*NB1725PERLINK + iBoard;
 
         // Create module objects
-        ov1720.emplace_back(v1720CONET2(feIndex, iLink, iBoard, moduleID, hDB));
+        ov1725.emplace_back(v1725CONET2(feIndex, iLink, iBoard, moduleID, hDB));
 
-	ov1720.back().SetBoardRecord(hDB,seq_callback);
+	ov1725.back().SetBoardRecord(hDB,seq_callback);
 
  #if 1 //PAA
         // Open Optical interface
         printf("Opening optical interface Link %d, Board %d\n", iLink, iBoard);
-        switch(ov1720.back().Connect()){
-        case v1720CONET2::ConnectSuccess:
+        switch(ov1725.back().Connect()){
+        case v1725CONET2::ConnectSuccess:
           nActive++;
         printf("InitializeForAcq Link %d, Board %d\n", iLink, iBoard);
-	  ov1720.back().InitializeForAcq();
+	  ov1725.back().InitializeForAcq();
           break;
-        case v1720CONET2::ConnectErrorCaenComm:
-        case v1720CONET2::ConnectErrorTimeout:
+        case v1725CONET2::ConnectErrorCaenComm:
+        case v1725CONET2::ConnectErrorTimeout:
           errBoards.push_back(std::pair<int,int>(iLink,iBoard));
           break;
-        case v1720CONET2::ConnectErrorAlreadyConnected:
+        case v1725CONET2::ConnectErrorAlreadyConnected:
           //do nothing
           break;
         default:
@@ -360,7 +282,7 @@ INT frontend_init(){
           break;
         }
 
-        if(!((iLink == (NBLINKSPERA3818-1)) && (iBoard == (NB1720PERLINK-1)))) {
+        if(!((iLink == (NBLINKSPERA3818-1)) && (iBoard == (NB1725PERLINK-1)))) {
           printf("Sleeping for %d milliseconds before next board\n", SLEEP_TIME_BETWEEN_CONNECTS);
           ss_sleep(SLEEP_TIME_BETWEEN_CONNECTS);
         }
@@ -370,14 +292,14 @@ INT frontend_init(){
     }
   } else {  //index supplied
 
-    nExpected = NB1720PERLINK*NBLINKSPERFE;
+    nExpected = NB1725PERLINK*NBLINKSPERFE;
 
-    if((NBV1720TOTAL % (NB1720PERLINK*NBLINKSPERFE)) != 0){
+    if((NBV1725TOTAL % (NB1725PERLINK*NBLINKSPERFE)) != 0){
       printf("Incorrect setup: the number of boards controlled by each frontend"
           " is not a fraction of the total number of boards.");
     }
 
-    int maxIndex = (NBV1720TOTAL/NB1720PERLINK)/NBLINKSPERFE - 1;
+    int maxIndex = (NBV1725TOTAL/NB1725PERLINK)/NBLINKSPERFE - 1;
     if(feIndex < 0 || feIndex > maxIndex){
       printf("Front end index must be between 0 and %d\n", maxIndex);
       exit(1);
@@ -387,37 +309,37 @@ INT frontend_init(){
     int lastLink = firstLink + NBLINKSPERFE - 1;
     for (int iLink=firstLink; iLink <= lastLink; iLink++)
     {
-      for (int iBoard=0; iBoard < NB1720PERLINK; iBoard++)
+      for (int iBoard=0; iBoard < NB1725PERLINK; iBoard++)
       {
 
         printf("<<< Begin of Init \n feIndex:%i, link:%i, board:%i\n",
             feIndex, iLink, iBoard);
 
         // Compose unique module ID
-        int moduleID = feIndex*NBLINKSPERFE*NB1720PERLINK + (iLink-firstLink)*NB1720PERLINK + iBoard;
+        int moduleID = feIndex*NBLINKSPERFE*NB1725PERLINK + (iLink-firstLink)*NB1725PERLINK + iBoard;
 
         // Create module objects
-        ov1720.push_back(v1720CONET2(feIndex, iLink, iBoard, moduleID, hDB));
-        ov1720.back().verbose = 1;
+        ov1725.push_back(v1725CONET2(feIndex, iLink, iBoard, moduleID, hDB));
+        ov1725.back().verbose = 1;
 
         // Setup ODB record (create if necessary)
-        ov1720.back().SetBoardRecord(hDB,seq_callback);
+        ov1725.back().SetBoardRecord(hDB,seq_callback);
         // Set history ODB record (create if necessary)
-        ov1720.back().SetHistoryRecord(hDB,seq_callback);
+        ov1725.back().SetHistoryRecord(hDB,seq_callback);
 
         // Open Optical interface
         printf("Opening optical interface Link %d, Board %d\n", iLink, iBoard);
-        switch(ov1720.back().Connect()){
-        case v1720CONET2::ConnectSuccess:
+        switch(ov1725.back().Connect()){
+        case v1725CONET2::ConnectSuccess:
           nActive++;
-          ov1720.back().InitializeForAcq();
-	  //ov1720.back().SaveSettings();
+          ov1725.back().InitializeForAcq();
+	  //ov1725.back().SaveSettings();
           break;
-        case v1720CONET2::ConnectErrorCaenComm:
-        case v1720CONET2::ConnectErrorTimeout:
+        case v1725CONET2::ConnectErrorCaenComm:
+        case v1725CONET2::ConnectErrorTimeout:
           errBoards.push_back(std::pair<int,int>(iLink,iBoard));
           break;
-        case v1720CONET2::ConnectErrorAlreadyConnected:
+        case v1725CONET2::ConnectErrorAlreadyConnected:
           //do nothing
           break;
         default:
@@ -427,10 +349,10 @@ INT frontend_init(){
       }
     }
   }
-  //ov1720.back().SaveSettings();
-  printf(">>> End of Init. %d active v1720. Expected %d\n\n", nActive, nExpected);
+  //ov1725.back().SaveSettings();
+  printf(">>> End of Init. %d active v1725. Expected %d\n\n", nActive, nExpected);
    
-  //ov1720.back().InitializeForAcq();
+  //ov1725.back().InitializeForAcq();
   if(nActive == nExpected){
     set_equipment_status(equipment[0].name, "Initialized", "#00ff00");
   }
@@ -463,9 +385,9 @@ INT frontend_exit(){
 
   set_equipment_status(equipment[0].name, "Exiting...", "#FFFF00");
 
-  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720) {
-    if (itv1720->IsConnected()){
-      itv1720->Disconnect();
+  for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725) {
+    if (itv1725->IsConnected()){
+      itv1725->Disconnect();
     }
   }
   set_equipment_status(equipment[0].name, "Exited", "#00ff00");
@@ -487,11 +409,11 @@ INT begin_of_run(INT run_number, char *error){
 
   printf("<<< Begin of begin_of_run\n");
 
-  // Reset and Start v1720s
-  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720) {
-    if (! itv1720->IsConnected()) continue;   // Skip unconnected board
+  // Reset and Start v1725s
+  for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725) {
+    if (! itv1725->IsConnected()) continue;   // Skip unconnected board
     // Start run then wait for trigger
-    itv1720->StartRun();
+    itv1725->StartRun();
   }
 
   runInProgress = true;
@@ -522,22 +444,22 @@ INT end_of_run(INT run_number, char *error){
   printf("<<< Beginning of end_of_run \n");
 
   // Stop run
-  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720) {
-    if (itv1720->IsConnected()) {  // Skip unconnected board
-      result = itv1720->StopRun();
+  for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725) {
+    if (itv1725->IsConnected()) {  // Skip unconnected board
+      result = itv1725->StopRun();
 
       if(!result)
-        cm_msg(MERROR, "feov1720:EOR",
-            "Could not stop the run for module %d\n", itv1720->GetModuleID());
+        cm_msg(MERROR, "feov1725:EOR",
+            "Could not stop the run for module %d\n", itv1725->GetModuleID());
     }
   }
 
   runOver = false;
   runStopRequested = false;
   runInProgress = false;
-  result = ov1720[0].Poll(&eStored);
+  result = ov1725[0].Poll(&eStored);
   if(eStored != 0x0) {
-    cm_msg(MERROR, "feov1720:EOR", "Events left in the v1720: %d",eStored);
+    cm_msg(MERROR, "feov1725:EOR", "Events left in the v1725: %d",eStored);
   }
 
   printf(">>> End Of end_of_run\n\n");
@@ -597,11 +519,11 @@ INT frontend_loop()
   if (runStopRequested && !runOver) {
     db_set_value(hDB,0,"/logger/channels/0/Settings/Event limit", &evlimit, sizeof(evlimit), 1, TID_DWORD);
     if (cm_transition(TR_STOP, 0, str, sizeof(str), BM_NO_WAIT, FALSE) != CM_SUCCESS) {
-      cm_msg(MERROR, "feov1720", "cannot stop run: %s", str);
+      cm_msg(MERROR, "feov1725", "cannot stop run: %s", str);
     }
     runInProgress = false;
     runOver = true;
-    cm_msg(MERROR, "feov1720","feov1720 Stop requested");
+    cm_msg(MERROR, "feov1725","feov1725 Stop requested");
   }
   return SUCCESS;
 }
@@ -639,9 +561,9 @@ extern "C" INT poll_event(INT source, INT count, BOOL test) {
       bool evtReady = false;
       //bool evtReady = true;
       int j = 0;
-      for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720){
+      for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725){
 	j++;
-	itv1720->ReadReg(V1720_VME_STATUS, &vmeStat);
+	itv1725->ReadReg(V1725_VME_STATUS, &vmeStat);
 	
 	//if (vmeStat !=0x8) printf(" vmeStat=%d\n",vmeStat);
         if((!test) && (vmeStat != 0x8)) 
@@ -710,9 +632,9 @@ INT read_trigger_event(char *pevent, INT off) {
   sn = SERIAL_NUMBER(pevent);
 
   bk_init32(pevent);
-  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720) {
+  for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725) {
  
-    if (! itv1720->IsConnected()) continue;   // Skip unconnected board
+    if (! itv1725->IsConnected()) continue;   // Skip unconnected board
   
 #if 0
     // >>> Get time before read (for data throughput analysis. To be removed)
@@ -722,11 +644,11 @@ INT read_trigger_event(char *pevent, INT off) {
 #endif
 
     // Try forcing a flushing of data buffers, so we get data from all channels for each event...
-    // itv1720->WriteReg(0x8040, 1);
+    // itv1725->WriteReg(0x8040, 1);
     //usleep(100);
 
     // >>> Fill Event bank
-    itv1720->FillEventBank(pevent);
+    itv1725->FillEventBank(pevent);
 
   }
 
@@ -740,8 +662,8 @@ INT read_trigger_event(char *pevent, INT off) {
 INT read_buffer_level(char *pevent, INT off) {
 
   bk_init32(pevent);
-  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720){
-    itv1720->FillBufferLevelBank(pevent);
+  for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725){
+    itv1725->FillBufferLevelBank(pevent);
   }
   
   return bk_size(pevent);
