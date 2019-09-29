@@ -134,7 +134,7 @@ EQUIPMENT equipment[] =
   },
 
   {
-    "BUFLVL%02d",                /* equipment name */
+    "V1725_Slow",                /* equipment name */
     {
       2, 0,                   /* event ID, trigger mask */
       "SYSTEM",               /* event buffer */
@@ -595,7 +595,6 @@ extern "C" INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
  */
 INT read_trigger_event(char *pevent, INT off) {
 
-  printf("Reading event!\n");
   if (!runInProgress) return 0;
 
   sn = SERIAL_NUMBER(pevent);

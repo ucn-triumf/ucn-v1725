@@ -961,7 +961,7 @@ int v1725CONET2::InitializeForAcq()
 {
   CAEN_DGTZ_ErrorCode ret;
   
-  uint32_t reg, reg2, reg3, reg4;
+  uint32_t reg, reg3, reg4;
 
   // I think this part could be combined into a single command...
   ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg);
@@ -1153,9 +1153,8 @@ int v1725CONET2::InitializeForAcq()
       // Set the number of samples for each waveform (you can set differently for different pairs of channels)             
       addr = V1725_RECORD_LENGTH | (i << 8);
       retbool = WriteReg(addr, config.recordLen[i]);
+      printf("Wrote length: 0x%x %i\n",addr,config.recordLen[i]);
       if(!retbool) printf("Error setting record length %i\n",i);
-
-      retval |= CAEN_DGTZ_SetRecordLength(_device_handle, config.recordLen[i], i);
       
       // Set a DC offset to the input signal to adapt it to digitizer's dynamic range                              
       retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, i, config.DCoffset[i]);
@@ -1179,7 +1178,7 @@ int v1725CONET2::InitializeForAcq()
   for (int ich=0; ich< 16; ich++){
     ret = CAEN_DGTZ_SetChannelSelfTrigger(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.DPPSelfTrig[ich], chmask);
     if (ret != CAEN_DGTZ_Success) {
-      printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelSelfTrigger ch=%d mask=%d selftrig=%d retval=\n",ich, chmask, config.DPPSelfTrig[ich], ret);
+      printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelSelfTrigger ch=%d mask=%d selftrig=%d retval=%i\n",ich, chmask, config.DPPSelfTrig[ich], ret);
       return (int)ret;
     }
     chmask <<= 1;
@@ -1197,25 +1196,15 @@ int v1725CONET2::InitializeForAcq()
   printf("0x1084 0x%x\n",reg);
 
 
-
-
-
-
-
   // read and write all 0x1n80 registers
   // set bit 7 to 1 to allow for extended time stamp
   for (int ich=0; ich< 16; ++ich){
-    if(verbose){ 
-      //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
-    }
     unsigned addrn = 0x1080 + ich*0x100;
     unsigned regn;
     ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
     if (verbose){
       if ( ret != CAEN_DGTZ_Success ) {
 	std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
-      } else {
-	//std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
       }
     }
     
@@ -1223,20 +1212,15 @@ int v1725CONET2::InitializeForAcq()
     if(verbose){
       if ( ret != CAEN_DGTZ_Success ) {
 	std::cout<<"CAEN_DGTZ_WriteRegister "<<std::hex<<addrn<<" failed with "<<ret<<std::endl;
-      } else {
-	//std::cout<<std::hex<<addrn<<" write to be "<< std::bitset<32>( regn | (1<<7) ) <<" == "<<std::hex<<(regn|(1<<7))<<std::dec<<std::endl;
       }
     }
     ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
-    if (verbose){
-      
+    if (verbose){      
       if ( ret != CAEN_DGTZ_Success ) {
 	std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
-      } else {
-	//std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
       }
     }
-    }
+  }
 
   unsigned regnn;
   ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
@@ -1273,33 +1257,26 @@ int v1725CONET2::InitializeForAcq()
   for (int i=0;i<16;i++) {
     addr = V1725_CHANNEL_STATUS | (i << 8);
     ReadReg(addr,&temp);
-    //		printf("Channel (%i) %x Status: %x\n",i,addr,temp);
     if((temp & 0x4) == 0x4){
       printf("waiting for ADC calibration to finish...\n");
       int j;
       for(j =0; j < 20; i++){
 	sleep(1);
-	//				printf("temp %x\n",temp);
 	ReadReg(addr,&temp);
 	if((temp & 0x4) == 0x0){
 	  break;
 	}
       }
       if(j < 19){
-	ReadReg(addr,&temp);
-	
+	ReadReg(addr,&temp);	
 	printf("Took %i seconds to finish calibration. calibration status: %x\n",j+1,(temp & 0x8));
       }else{
 	cm_msg(MINFO, "InitializeForAcq", "ADC Calibration did not finish!");
       }					
-    }else{
-      //			printf("ADC calibration finished already\n");
     }
   }
   
   printf("Module[...] : ADC calibration finished already\n");
-
-
 
 
   /* WARNING: The mallocs MUST be done after the digitizer programming,
@@ -1380,7 +1357,7 @@ int v1725CONET2::InitializeForAcq()
   ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
   std::cout<<"0x8000 read    to be "<<std::bitset<32>(reg3)<<std::endl;
 
-  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8020, &regnn);
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x1020, &regnn);
   printf("Record length final: %i %i\n",ret,regnn);
 
   return 0;
@@ -1613,15 +1590,13 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   snprintf(statBankName, sizeof(statBankName), "BL%02d", this->GetModuleID());
   bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata);
 
-  //ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
-  CAEN_DGTZ_ErrorCode ret;
-
   //Get v1725 buffer level
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1725_EVENT_STORED, &eStored);
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1725_ALMOST_FULL_LEVEL, &almostFull);
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,0x800C, &nagg);
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,0x8034, &nepa);
-  ret = CAEN_DGTZ_ReadRegister(_device_handle,0x8104, &status);
+  CAEN_DGTZ_ReadRegister(_device_handle,V1725_EVENT_STORED, &eStored);
+  CAEN_DGTZ_ReadRegister(_device_handle,V1725_ALMOST_FULL_LEVEL, &almostFull);
+  CAEN_DGTZ_ReadRegister(_device_handle,0x800C, &nagg);
+  CAEN_DGTZ_ReadRegister(_device_handle,0x8034, &nepa);
+  CAEN_DGTZ_ReadRegister(_device_handle,0x8104, &status);
+
 
 
   // save if there are events ready
@@ -1658,6 +1633,21 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   gettimeofday(&v1725LastTime, NULL);
 
   bk_close(pevent, pdata2);
+
+  // Make third bank with ADC temmperatures.
+  DWORD *pdata3;
+  DWORD temp;
+  int addr;
+  char bankName[5];
+  sprintf(bankName,"TP5%01d", GetModuleID());
+  bk_create(pevent, bankName, TID_DWORD, (void **)&pdata3);
+  for (int i=0;i<16;i++) {
+    addr = V1725_CHANNEL_TEMPERATURE | (i << 8);
+    ReadReg(addr, &temp);
+    *pdata3++ =  temp;
+    
+  }
+  bk_close(pevent,pdata3);
 
 
   return bk_size(pevent);
