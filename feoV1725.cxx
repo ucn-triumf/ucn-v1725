@@ -8,36 +8,8 @@
 
 Standard Midas Frontend for Optical access to the CAEN v1725 using the A3818 CONET2 driver
 
-\subsection organization File organization
+Meant for use with DPP-PSD firmware.
 
-- Compile time parameters setting
-- MIDAS global variable defintion
-- MIDAS function declaration
-- Equipment variables
-- functions
-
-\subsection routines Callback routines for system transitions
-
-These routines are called whenever a system transition like start/
-stop of a run occurs. The routines are called on the following
-occations:
-
-- frontend_init:  When the frontend program is started. This routine
-                should initialize the hardware.
-
-- frontend_exit:  When the frontend program is shut down. Can be used
-                to releas any locked resources like memory, commu-
-                nications ports etc.
-
-- begin_of_run:   When a new run is started. Clear scalers, open
-                rungates, etc.
-
-- end_of_run:     Called on a request to stop a run. Can send
-                end-of-run event and close run gates.
-
-- pause_run:      When a run is paused. Should disable trigger events.
-
-- resume_run:     When a run is resumed. Should enable trigger events.
 
  *****************************************************************************/
 
@@ -349,10 +321,8 @@ INT frontend_init(){
       }
     }
   }
-  //ov1725.back().SaveSettings();
   printf(">>> End of Init. %d active v1725. Expected %d\n\n", nActive, nExpected);
    
-  //ov1725.back().InitializeForAcq();
   if(nActive == nExpected){
     set_equipment_status(equipment[0].name, "Initialized", "#00ff00");
   }
@@ -532,8 +502,6 @@ INT frontend_loop()
 /********************************************************************\
   Readout routines for different events
 \********************************************************************/
-int Nloop;  //!< Number of loops executed in event polling
-int Ncount; //!< Loop count for event polling timeout
 DWORD acqStat; //!< ACQUISITION STATUS reg, must be global because read by poll_event, accessed by read_trigger_event
 // ___________________________________________________________________
 /*-- Trigger event routines ----------------------------------------*/
@@ -627,25 +595,16 @@ extern "C" INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
  */
 INT read_trigger_event(char *pevent, INT off) {
 
+  printf("Reading event!\n");
   if (!runInProgress) return 0;
 
   sn = SERIAL_NUMBER(pevent);
-
+  
   bk_init32(pevent);
+
   for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725) {
  
     if (! itv1725->IsConnected()) continue;   // Skip unconnected board
-  
-#if 0
-    // >>> Get time before read (for data throughput analysis. To be removed)
-    timeval tv;
-    gettimeofday(&tv,0);
-    suseconds_t usStart = tv.tv_usec;
-#endif
-
-    // Try forcing a flushing of data buffers, so we get data from all channels for each event...
-    // itv1725->WriteReg(0x8040, 1);
-    //usleep(100);
 
     // >>> Fill Event bank
     itv1725->FillEventBank(pevent);
@@ -663,7 +622,9 @@ INT read_buffer_level(char *pevent, INT off) {
 
   bk_init32(pevent);
   for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725){
+
     itv1725->FillBufferLevelBank(pevent);
+    //itv1725->WriteReg(0x1FC0,1);
   }
   
   return bk_size(pevent);

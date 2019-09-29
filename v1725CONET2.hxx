@@ -189,7 +189,6 @@ void SaveSettings();
     INT       sw_trig_mode;  // software trigger mode
     INT       trig_input_mode; // trigger mode (per channel, or external, or both)
     DWORD     channel_mask;            //!< 0x8120@[ 7.. 0]
-    DWORD     post_trigger;            //!< 0x8114@[31.. 0]
 
     // DPP settings
     INT savewaveforms;                 //separate from SetDPPParameters
@@ -205,7 +204,7 @@ void SaveSettings();
     INT DCoffset[16];                //separate from SetDPPParameters     
     INT PreTriggerSize[16];
     INT recordLen[16];                     //separate from SetDPPParameters
-    INT BLthr;
+    INT baseline;
   } config; //!< instance of config structure
 
   struct DPP_CONFIG_SETTINGS {

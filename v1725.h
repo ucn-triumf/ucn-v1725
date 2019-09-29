@@ -23,7 +23,6 @@
 #define V1725_SW_TRIGGER                      0x8108      /* write only; D32 */ 
 #define V1725_TRIG_SRCE_EN_MASK               0x810C      /* R/W       ; D32 */ 
 #define V1725_FP_TRIGGER_OUT_EN_MASK          0x8110      /* R/W       ; D32 */ 
-#define V1725_POST_TRIGGER_SETTING            0x8114      /* R/W       ; D32 */ 
 #define V1725_FP_IO_DATA                      0x8118      /* R/W       ; D32 */ 
 #define V1725_FP_IO_CONTROL                   0x811C      /* R/W       ; D32 */  
 #define V1725_CHANNEL_EN_MASK                 0x8120      /* R/W       ; D32 */ 
@@ -55,7 +54,8 @@
 #define V1725_RECORD_LENGTH                   0x1020      /* R/W       ; D32 */ 
 #define V1725_ZS_THRESHOLD                    0x1024      /* For channel 0 */
 #define V1725_ZS_NSAMP                        0x1028      /* For channel 0 */
-#define V1725_CHANNEL_THRESHOLD               0x1080      /* For channel 0 */
+#define V1725_PRE_TRIGGER                     0x1038      /* For channel 0 */
+#define V1725_DPP_ALGORITHM_CONTROL1          0x1080      /* For channel 0 */
 #define V1725_CHANNEL_OUTHRESHOLD             0x1084      /* For channel 0 */
 #define V1725_CHANNEL_STATUS                  0x1088      /* For channel 0 */
 #define V1725_FPGA_FWREV                      0x108C      /* For channel 0 */
