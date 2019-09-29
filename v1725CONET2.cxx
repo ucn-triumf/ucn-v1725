@@ -442,6 +442,8 @@ bool v1725CONET2::StartRun()
     printf("<v1725CONET2::StartRun> Acquisition Start FAILED for Link %d Board %d  Error %d\n", _link,  _board, e);
     return false;
   }
+
+  return true;
 }
 /**
  * \brief   Stop data acquisition
@@ -1259,6 +1261,47 @@ int v1725CONET2::InitializeForAcq()
   //// set number of events per aggregate
   WriteReg(0x8034, 0x1);
   
+
+  // Wait for 200ms after channing DAC offsets, before starting calibration. 
+  usleep(200000);
+  
+  // Start the ADC calibration
+  WriteReg(V1725_ADC_CALIBRATION , 1);
+  // Now we check to see when the calibration has finished.
+  // by checking register 0x1n88.
+  DWORD temp;
+  for (int i=0;i<16;i++) {
+    addr = V1725_CHANNEL_STATUS | (i << 8);
+    ReadReg(addr,&temp);
+    //		printf("Channel (%i) %x Status: %x\n",i,addr,temp);
+    if((temp & 0x4) == 0x4){
+      printf("waiting for ADC calibration to finish...\n");
+      int j;
+      for(j =0; j < 20; i++){
+	sleep(1);
+	//				printf("temp %x\n",temp);
+	ReadReg(addr,&temp);
+	if((temp & 0x4) == 0x0){
+	  break;
+	}
+      }
+      if(j < 19){
+	ReadReg(addr,&temp);
+	
+	printf("Took %i seconds to finish calibration. calibration status: %x\n",j+1,(temp & 0x8));
+      }else{
+	cm_msg(MINFO, "InitializeForAcq", "ADC Calibration did not finish!");
+      }					
+    }else{
+      //			printf("ADC calibration finished already\n");
+    }
+  }
+  
+  printf("Module[...] : ADC calibration finished already\n");
+
+
+
+
   /* WARNING: The mallocs MUST be done after the digitizer programming,
      because the following functions needs to know the digitizer configuration
      to allocate the right memory amount */
@@ -1565,9 +1608,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
 
   float *pdata, *pdata2;
   DWORD eStored, almostFull, nagg,nepa,status;
-  int rb_level;
   char statBankName[5];
-  CAENComm_ErrorCode sCAEN;
 
   snprintf(statBankName, sizeof(statBankName), "BL%02d", this->GetModuleID());
   bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata);

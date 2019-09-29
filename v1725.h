@@ -18,6 +18,7 @@
 #define V1725_CHANNEL_CFG_BIT_CLR             0x8008      /* write only; D32 */ 
 #define V1725_BUFFER_ORGANIZATION             0x800C      /* R/W       ; D32 */ 
 #define V1725_BUFFER_FREE                     0x8010      /* R/W       ; D32 */ 
+#define V1725_ADC_CALIBRATION                 0x809C      /* R/W       ; D32 */ 
 #define V1725_ACQUISITION_CONTROL             0x8100      /* R/W       ; D32 */ 
 #define V1725_ACQUISITION_STATUS              0x8104      /* read  only; D32 */ 
 #define V1725_SW_TRIGGER                      0x8108      /* write only; D32 */ 
