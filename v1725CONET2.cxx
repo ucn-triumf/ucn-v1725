@@ -585,6 +585,73 @@ bool v1725CONET2::Poll(DWORD *val)
   return (sCAEN == CAENComm_Success);
 }
 
+// function will return vector with number of events per channel for data packet
+std::vector<int> GetNumberEvents(int bklen, DWORD *pdata)
+{
+  
+  std::vector<int> nevents;
+  for(int i = 0; i < 16; i++) nevents.push_back(0);
+
+  //printf("Start decoding!!! %i\n",sizeof(long int));
+
+  // Do decoding.  Decoding is complicated by the fact that there can be 
+  // multiple events in the same bank.  So need to find and save multiple
+  // event headers, trailers.
+  
+  // Do some sanity checking.  
+  // Make sure first word has right identifier
+  if( (pdata[0] & 0xf0000000) != 0xa0000000) 
+    std::cerr << "First word has wrong identifier; first word = 0x" 
+	      << std::hex << pdata[0] << std::dec << std::endl;
+  
+  int counter = 4;  
+  // Loop over dual channel data
+  for(int ch = 0; ch < 8; ch++){    
+    if((1<<ch) & (pdata[1] & 0xff)){      
+      uint32_t header0 = pdata[counter];
+      counter++;
+      uint32_t header1 = pdata[counter];
+      counter++;
+      uint32_t header2 = pdata[counter];
+      counter++;
+      uint32_t size = header0 & 0x7fff;
+
+      // skip over the samples.
+      int nsamples = size - 5; // calculate number of samples.
+      counter += nsamples;
+
+      uint32_t extras = pdata[counter];
+      counter++;
+      uint32_t qs = pdata[counter];
+      counter++;
+      
+      if((unsigned int)counter != (0xfffffff & pdata[0])) 
+	std::cout << "V1725 Check:  " << counter << " " 
+		  << (0xfffffff & pdata[0]) 
+		  << "Whoops, multi event readout, decoding is wrong@! " 
+		  << std::endl;
+      if(nsamples*2 != (0xffff & header1 )*8)
+	std::cout << "V1725 Check2: " << nsamples << " " 
+		  << (0xffff & header1 )*8 
+		  << " whoops, mistake in decoding, sample size not as expected. " 
+		  << std::endl;
+
+      // increment the counter
+      unsigned int chan = ch*2 + ((header2 & 0x80000000) >> 31);
+      if(chan < 0 || chan > 16){
+	printf("V1725 decode; Bad channel number %i\n",
+				       chan);
+      }else{
+	nevents[chan]++;
+      }      
+    }
+  }
+
+  return nevents;
+}
+
+
+
 //! Maximum size of data to read using BLT (32-bit) cycle
 //#define MAX_BLT_READ_SIZE_BYTES 10000
 #define MAX_BLT_READ_SIZE_BYTES 100000
@@ -607,12 +674,6 @@ bool v1725CONET2::FillEventBank(char * pevent)
     return false;
   }
   
-  // Double checking that board is ready to read
-  //DWORD vmeStat;
-  //this->ReadReg(V1725_VME_STATUS, &vmeStat);
-  //if(!(vmeStat & 0x1))
-  // return true;
-
   // grab data stream
   DWORD *pdata = (DWORD *)pevent;
   int ch,ret=0;
@@ -628,6 +689,7 @@ bool v1725CONET2::FillEventBank(char * pevent)
 
   sprintf(bankName, "W5%02d", this->_moduleID);
   bk_create(pevent, bankName, TID_DWORD, (void**)&pdata);
+  DWORD *idata = pdata;
   //  *pdata++ = NTotal;
 
   DWORD size_remaining_dwords, to_read_dwords;//, *pdata = (DWORD *)wp;
@@ -649,7 +711,7 @@ bool v1725CONET2::FillEventBank(char * pevent)
                                  << ", to_read_dwords=" << to_read_dwords
                                  << ", dwords_read returned " << dwords_read << ");" << std::endl;
 
-    for(int i = 0; i < to_read_dwords; i++){
+    for(int i = 0; i < 6; i++){
 
       printf("0x%x\n",pdata[i]);
     }
@@ -660,31 +722,22 @@ bool v1725CONET2::FillEventBank(char * pevent)
     pdata += dwords_read;
   }
 
+  std::vector<int> nevents = GetNumberEvents(dwords_read_total,idata);
+  for(int i = 0; i < 16; i++){
+    //    if(nevents[i] > 0){
+    if(0)std::cout << "got nhits ("<< nevents[i] <<") on chan " 
+		   << i << " " 
+		   << EventCounter[i] << std::endl;
+    EventCounter[i] += nevents[i];
+      
+  }
+
   bk_close(pevent, pdata);
 
 
-  //  return bk_size(pevent);
   return true;
 
-  // read in data
-  ret = CAEN_DGTZ_ReadData(_device_handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
-  //ret = CAEN_DGTZ_ReadData(_device_handle, CAEN_DGTZ_POLLING_2eSST, buffer, &BufferSize);
-  if (ret) {
-    printf("<v1725CONET::FillEventBank> Readout Error %d\n",ret);
-    exit(0);
-    //return false;    
-  }
-  if ( BufferSize == 0 )
-    return true;  
-  
-  // read in DPP data
-  ret = CAEN_DGTZ_GetDPPEvents(_device_handle, buffer, BufferSize, (void**)Events, NumEvents);
-  if (ret) {
-    //printf("<v1725CONET2::FillEventBank> Data Error: %d\n", ret);
-    return false;
-  }
-
-  // need to fffffffffigureee out howwwwwwww to include this quantity without CAEN
+  // need to ffigureee out how to include this quantity without CAEN
   // library
   // find the total number of events for this read
   for(ch=0; ch<MaxNChannels; ch++) {
@@ -694,139 +747,13 @@ bool v1725CONET2::FillEventBank(char * pevent)
     EventCounter[ch] += NumEvents[ch]; // save total events per channel in order to save rates per channel.
   }
 
-  // >>> create data bank
-  sprintf(bankName, "W2%02d", this->_moduleID);
-  bk_create(pevent, bankName, TID_DWORD, (void**)&pdata);
-  *pdata++ = NTotal;
-  
-  for(ch=0; ch<MaxNChannels; ch++) {
-    if (!(DPPConfig.Params.ChannelMask & (1<<ch)))
-      continue;
-    
-    // save data to event format
-    for(ev=0; ev<NumEvents[ch]; ev++) {
-      
-      /* Channel */
-      out.Channel = ch;
-      /* Time Tag */
-      // build time from TimeTag and Extras
-      uint64_t ttag = Events[ch][ev].TimeTag;
-      uint64_t textra = Events[ch][ev].Extras;
-      textra = (textra << 32); 
-      if(verbose){
-	std::cout<<"Timetag and extras: \n\t"
-		 << std::bitset<64>( ttag ) << "+ \n\t"
-		 << std::bitset<64>( textra ) << "= \n\t"
-		 << std::bitset<64>( ttag+textra ) << "+ \n";
-      }
-      out.TimeTag = ttag+textra;
-      if (verbose)
-	std::cout<<"ttag="<< ttag<<" textra="<<textra<<" sum="<<out.TimeTag<<std::endl;
-      /* Energy */
-      out.ChargeShort= Events[ch][ev].ChargeShort;
-      out.ChargeLong = Events[ch][ev].ChargeLong;
-      out.Baseline =  Events[ch][ev].Baseline;
 
-      if(verbose){
-	std::cout<<"Format: "  <<std::bitset<32>( Events[ch][ev].Format )
-		 <<" Format2: "<<std::bitset<32>( Events[ch][ev].Format2 )  <<std::endl;
-      }
-      // check if flags are enabled:
-      // bit 29 ET (Time tag enable)
-      unsigned bit29mask = 0x20000000;
-      // bit 28 EE (Extras enable)
-      unsigned bit28mask = 0x10000000;
-      // bit 22 EET (EET=1, then put extended timestamp in extras)
-      unsigned bit22mask = 0x00400000;
-
-      /*if(verbose){
-	std::cout<<" ET enabled = "<<  std::endl
-		 << "\t" << std::bitset<32>( Events[ch][ev].Format )  << "&" << std::endl
-		 << "\t" << std::bitset<32>( bit29mask ) <<" = "<< std::endl
-		 << "\t" << std::bitset<32>(Events[ch][ev].Format & bit29mask)  << std::endl; 
-	
-	std::cout<<" EE enabled = "<<  std::endl
-		 << "\t" << std::bitset<32>( Events[ch][ev].Format )  << "&" << std::endl
-		 << "\t" << std::bitset<32>( bit28mask ) <<" = "<< std::endl
-		 << "\t" << std::bitset<32>(Events[ch][ev].Format & bit28mask)  << std::endl; 
-	
-	std::cout<<" EET enabled = "<<  std::endl
-		 << "\t" << std::bitset<32>( Events[ch][ev].Format )  << "&" << std::endl
-		 << "\t" << std::bitset<32>( bit22mask ) <<" = "<< std::endl
-		 << "\t" << std::bitset<32>(Events[ch][ev].Format & bit22mask)  << std::endl;
-		 }*/
-      // Register reads to make sure that they are still set to what will allow for an extended
-      // time stamp.
-      uint32_t reg;
-      if (verbose){
-	ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg);
-	if ( ret != CAEN_DGTZ_Success ) {
-	  std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
-	} else {
-	  //std::cout<<"0x8000 read    to be "<<std::bitset<32>(reg)<<std::endl;
-	}
-	
-	for (int ich=0; ich< 16; ++ich){
-	  //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
-	  unsigned regn;
-	  unsigned addrn = 0x1080 + ich*0x100;
-	  ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
-	  if ( ret != CAEN_DGTZ_Success ) {
-	    std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
-	  } else {
-	    //std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
-	  }
-	  
-	}
-      }
-      
-      if (this->_moduleID == 0) sum0[ch]=sum0[ch]+out.Baseline;///////added May 26, 2016
-      if (this->_moduleID == 1) sum1[ch]=sum1[ch]+out.Baseline;
-      
-      //std::cout<<"Channel: "<<ch<<"Event: "<<ev<<"Baseline: "<<Events[ch][ev].Baseline<<endl;
-      out.Pur = Events[ch][ev].Pur;
-	
-      Event = &Events[ch][ev];
-      
-      
-      if (DPPConfig.Params.SaveWaveforms==0){
-	out.Length = 0;
-	// save output data to the pointer before saving to the bank
-	memcpy( pdata, (void*)&out, sizeof( out ) ); 
-	pdata += sizeof(out)/sizeof(DWORD);
-
-      } else {
-	// grab the waveform used for DPP calculations
-	if(CAEN_DGTZ_DecodeDPPWaveforms(_device_handle, (void**)Event,Waveform)){
-	  printf("Event Error: cannot find DPPWaveforms\n");
-	  return -1;
-	}
-	out.Length = Waveform->Ns;
-	
-	// save output data to the pointer before saving to the bank
-	memcpy( pdata, (void*)&out, sizeof( out ) ); 
-	pdata += sizeof(out)/sizeof(DWORD);
-
-   
-	// save waveform to the pointer before saving to the bank
-	// copy from the first element of the waveform in memory 
-	// to the full length of the array
-	memcpy( pdata, (void*)&Waveform->Trace1[0], out.Length * sizeof( uint16_t ) ); 
-	pdata += out.Length*sizeof( uint16_t )/sizeof(DWORD);
-
-      }
-      // clear waveform for next event
-      curev++;	   
-    }
-  }
   int NumEvents1[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   for (ch=0; ch< 16; ch++)
     {
       NumEvents1[ch]=(int)(NumEvents[ch]);
     }
     
-
-  bk_close(pevent,pdata);
 
   return true;
 }
@@ -1031,9 +958,7 @@ int v1725CONET2::InitializeForAcq()
                                                            // Warning: List mode doesn't save baseline info
   DPPConfig.Params.SaveWaveforms = config.savewaveforms;
   DPPConfig.Params.ChannelMask = config.channel_mask;      // Channel enable mask
-  DPPConfig.Params.EventAggr = 1;// 255;// 512;//1024;//0;//1024;                          // number of events in one aggregate (0=automatic)
-  DPPConfig.Params.PulsePolarity = CAEN_DGTZ_PulsePolarityNegative; // Pulse Polarity (this parameter can be 
-                                                                    // individual)
+
   for(int ch=0; ch< 16; ch++) {
     DPPConfig.DPPParams.thr[ch] = config.DPPthresh[ch];    // Trigger Threshold
     /* The following parameter is used to specifiy the number of samples for the baseline averaging:
@@ -1150,41 +1075,27 @@ int v1725CONET2::InitializeForAcq()
 
     if (DPPConfig.Params.ChannelMask & (1<<i)) {
 
-      // Set the number of samples for each waveform (you can set differently for different pairs of channels)             
+      // Set the number of samples for each waveform (you can set differently for different pairs of channels)    
       addr = V1725_RECORD_LENGTH | (i << 8);
       retbool = WriteReg(addr, config.recordLen[i]);
       printf("Wrote length: 0x%x %i\n",addr,config.recordLen[i]);
-      if(!retbool) printf("Error setting record length %i\n",i);
       
       // Set a DC offset to the input signal to adapt it to digitizer's dynamic range                              
-      retval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, i, config.DCoffset[i]);
+      addr = V1725_CHANNEL_DAC | (i << 8);
+      retbool = WriteReg(addr, config.DCoffset[i]);  // pre-trigger samples is register value * 4
       
       // Set the Pre-Trigger size (in samples)                                                                    
       addr = V1725_PRE_TRIGGER | (i << 8);
       retbool = WriteReg(addr, config.PreTriggerSize[i]/4);  // pre-trigger samples is register value * 4
-      if(!retbool) printf("Error setting pretrigger %i\n",i);
       
-      // Set the negative polarity, lowest charge sensitivity, etc                                                                    
+      // Set the negative polarity, lowest charge sensitivity, self-trigger configuration etc               
       addr = V1725_DPP_ALGORITHM_CONTROL1 | (i << 8);
-      retbool = WriteReg(addr,0x30000 );
-      if(!retbool) printf("Error setting ChannelPulsePolarity %i\n",i);
-
+      unsigned int value = 0x30000;
+      if(!config.DPPSelfTrig[i]) value = 0x1030000;
+      retbool = WriteReg(addr,value );
 
     }
   } // end for
-  
-  // Setup the self-trigger configuration:
-  int chmask=1;
-  for (int ich=0; ich< 16; ich++){
-    ret = CAEN_DGTZ_SetChannelSelfTrigger(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.DPPSelfTrig[ich], chmask);
-    if (ret != CAEN_DGTZ_Success) {
-      printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelSelfTrigger ch=%d mask=%d selftrig=%d retval=%i\n",ich, chmask, config.DPPSelfTrig[ich], ret);
-      return (int)ret;
-    }
-    chmask <<= 1;
-
-    
-  }
 
   ReadReg(0x810C, &reg);
   printf("0x810C 0x%x\n",reg);
@@ -1194,6 +1105,8 @@ int v1725CONET2::InitializeForAcq()
   printf("0x1080 0x%x\n",reg);
   ReadReg(0x1084, &reg);
   printf("0x1084 0x%x\n",reg);
+  ReadReg(0x811C, &reg);
+  printf("0x811C 0x%x\n",reg);
 
 
   // read and write all 0x1n80 registers
@@ -1222,29 +1135,14 @@ int v1725CONET2::InitializeForAcq()
     }
   }
 
-  unsigned regnn;
-  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
-  if ( ret != CAEN_DGTZ_Success ) {
-    std::cout<<"CAEN_DGTZ_ReadRegister 0x800C failed with "<<ret<<std::endl;
-  } else {
-    std::cout<<"0x800C"<<" read  to be "<<std::bitset<32>(regnn)<<" == "<<std::hex<<regnn<<std::dec<<std::endl;
-  }
-  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x800C, ( 0x00 ) );
-  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
-  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x800C, ( 0x00 ) );
-
-  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
-  if ( ret != CAEN_DGTZ_Success ) {
-    std::cout<<"CAEN_DGTZ_ReadRegister 0x800C failed with "<<ret<<std::endl;
-  } else {
-    std::cout<<"0x800C"<<" read  to be "<<std::bitset<32>(regnn)<<" == "<<std::hex<<regnn<<std::dec<<std::endl;
-  }
-
+  unsigned int regnn, regnn1, regnn2;
   //// set number of aggregates in the v1725 memory (see multi-event memory organization in 1725 manual)
-  WriteReg(0x800C, 0x7);
+  WriteReg(0x800C, 0x8);
+  ReadReg(0x800C,&regnn1);
   //// set number of events per aggregate
   WriteReg(0x8034, 0x1);
-  
+  ReadReg(0x1034,&regnn2);
+  printf("Buffer org (0x800C)=0x%x, number aggregates (0x8034)=0x%x\n",regnn1,regnn2);
 
   // Wait for 200ms after channing DAC offsets, before starting calibration. 
   usleep(200000);
@@ -1279,40 +1177,6 @@ int v1725CONET2::InitializeForAcq()
   printf("Module[...] : ADC calibration finished already\n");
 
 
-  /* WARNING: The mallocs MUST be done after the digitizer programming,
-     because the following functions needs to know the digitizer configuration
-     to allocate the right memory amount */
-  /* Allocate memory for the readout buffer */
-  uint32_t AllocatedSize = 0;
-  buffer = NULL;
-  retval = CAEN_DGTZ_MallocReadoutBuffer(_device_handle, &buffer, &AllocatedSize);
-  printf("<v1725CONET2::InitializeForAcq> readout buffer malloced size=%d\n",AllocatedSize);
-  if (retval != CAEN_DGTZ_Success) {
-    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocReadoutBuffer %d\n",retval);
-    return (int)retval;
-  }
-
-  /* Allocate memory for the events */
-  retval |= CAEN_DGTZ_MallocDPPEvents(_device_handle, (void**)Events, &AllocatedSize); 
-  printf("<v1725CONET2::InitializeForAcq> dpp events malloced size=%d\n",AllocatedSize);
-  if (retval != CAEN_DGTZ_Success) {
-    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocDPPEvents %d\n",retval);
-    return (int)retval;
-  }
-
-  /* Allocate memory for the waveforms */
-  retval |= CAEN_DGTZ_MallocDPPWaveforms(_device_handle, (void**)&Waveform, &AllocatedSize); 
-  printf("<v1725CONET2::InitializeForAcq> waveforms malloced size=%d\n",AllocatedSize);
-
-  if (retval != CAEN_DGTZ_Success) {
-    printf("<v1725CONET2::InitializeForAcq> Error in CAEN_DGTZ_MallocDPPWaveforms %d\n",retval);
-    return (int)retval;
-  }
-  
-  
-  
-
-  //  PrintSettings();
   _settings_touched = false;
 
   // Final reads for 0x8000 and 0x1n80 registers
@@ -1620,15 +1484,19 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   float total_rate = 0;
   for(int i = 0; i < 16; i++){
     double rate = 0;
-    if (dtime !=0)
+    if (dtime !=0){
       rate = (float)EventCounter[i]/(dtime);
+      std::cout << "Rate: " << rate << " " 
+		<< EventCounter[i] << " " << dtime << std::endl;
+    }
     *pdata2++ = rate;
 
-    total_rate += rate;
+    if(i < 9)
+      total_rate += rate;
     if(verbose) printf(" %f",rate);
     EventCounter[i] = 0;
   }
-  *pdata2++ = total_rate; // save the total rate for the board as well.
+  *pdata2++ = total_rate; // save the total rate for the first 9 channels as well.
   if(verbose) printf(" %f \n",total_rate);
   gettimeofday(&v1725LastTime, NULL);
 
