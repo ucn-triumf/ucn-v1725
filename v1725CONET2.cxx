@@ -350,6 +350,9 @@ v1725CONET2::ConnectErrorCode v1725CONET2::Connect(int connAttemptsMax,
     return ConnectErrorCaenComm;
   }
   
+  // Reset counters
+  for(int i = 0; i < 16; i++) EventCounter[i] = 0;
+
   return returnCode;
 }
 
@@ -383,11 +386,6 @@ bool v1725CONET2::Disconnect()
     _device_handle = -1;
   else
     return false;
-
-  // free memory
-  CAEN_DGTZ_FreeReadoutBuffer(&buffer);
-  CAEN_DGTZ_FreeDPPEvents(_device_handle, (void**)Events);
-  //CAEN_DGTZ_FreeDPPWaveforms(_device_handle, Waveform);
 
   return true;
 }
@@ -626,11 +624,6 @@ std::vector<int> GetNumberEvents(int bklen, DWORD *pdata)
       uint32_t qs = pdata[counter];
       counter++;
       
-      if((unsigned int)counter != (0xfffffff & pdata[0])) 
-	std::cout << "V1725 Check:  " << counter << " " 
-		  << (0xfffffff & pdata[0]) 
-		  << "Whoops, multi event readout, decoding is wrong@! " 
-		  << std::endl;
       if(nsamples*2 != (0xffff & header1 )*8)
 	std::cout << "V1725 Check2: " << nsamples << " " 
 		  << (0xffff & header1 )*8 
@@ -647,6 +640,13 @@ std::vector<int> GetNumberEvents(int bklen, DWORD *pdata)
       }      
     }
   }
+  if((unsigned int)counter != (0xfffffff & pdata[0])) 
+    std::cout << "V1725 Check:  " << counter << " " 
+	      << (0xfffffff & pdata[0]) 
+	      << "Whoops, multi event readout, decoding is wrong@! " 
+	      << std::endl;
+  
+
 
   return nevents;
 }
@@ -719,10 +719,6 @@ bool v1725CONET2::FillEventBank(char * pevent)
   // Calculate the number of events per channel in bank and save for rate calculation.
   std::vector<int> nevents = GetNumberEvents(dwords_read_total,idata);
   for(int i = 0; i < 16; i++){
-    //    if(nevents[i] > 0){
-    if(0)std::cout << "got nhits ("<< nevents[i] <<") on chan " 
-		   << i << " " 
-		   << EventCounter[i] << std::endl;
     EventCounter[i] += nevents[i];      
   }
 
@@ -1052,7 +1048,6 @@ int v1725CONET2::InitializeForAcq()
       // Set the number of samples for each waveform (you can set differently for different pairs of channels)    
       addr = V1725_RECORD_LENGTH | (i << 8);
       retbool = WriteReg(addr, config.recordLen[i]);
-      printf("Wrote length: 0x%x %i\n",addr,config.recordLen[i]);
       
       // Set a DC offset to the input signal to adapt it to digitizer's dynamic range                              
       addr = V1725_CHANNEL_DAC | (i << 8);
@@ -1498,7 +1493,6 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
     if(config.forcetrigger & thisbit){    
       int addr = V1725_FORCE_TRIGGER | (i << 8);
        WriteReg(addr,1);
-       std::cout << "Force trigger " << i << std::endl;
     }
   }
 
