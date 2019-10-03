@@ -205,6 +205,7 @@ void SaveSettings();
     INT PreTriggerSize[16];
     INT recordLen[16];                     //separate from SetDPPParameters
     INT baseline;
+    INT forcetrigger;
   } config; //!< instance of config structure
 
   struct DPP_CONFIG_SETTINGS {

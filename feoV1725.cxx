@@ -623,7 +623,6 @@ INT read_buffer_level(char *pevent, INT off) {
   for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725){
 
     itv1725->FillBufferLevelBank(pevent);
-    itv1725->WriteReg(0x1EC0,1);
   }
   
   return bk_size(pevent);

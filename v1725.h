@@ -63,6 +63,7 @@
 #define V1725_BUFFER_OCCUPANCY                0x1094      /* For channel 0 */
 #define V1725_CHANNEL_DAC                     0x1098      /* For channel 0 */
 #define V1725_CHANNEL_TEMPERATURE             0x10A8      /* For channel 0 */
+#define V1725_FORCE_TRIGGER                   0x10C0      /* For channel 0 */
 
 #define V1725_RUN_START                             0x0001
 #define V1725_RUN_STOP                              0x0002

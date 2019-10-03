@@ -210,6 +210,7 @@ const char * v1725CONET2::config_str_board[] = {\
     "[14] 5",\
     "[15] 5",\
     "Baseline = INT : 8192",	\
+    "Force Trigger = INT : 0",	\
     NULL
 };
 
@@ -677,16 +678,9 @@ bool v1725CONET2::FillEventBank(char * pevent)
   // grab data stream
   DWORD *pdata = (DWORD *)pevent;
   int ch,ret=0;
-  int curev=0;
   char bankName[5];
   DWORD NTotal =0;
-  uint32_t NumEvents[MaxNChannels];
   
-  int sum0[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//added May 26, 2016
-  int sum1[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//added May 30, 2016 //may not need
- 
-
-
   sprintf(bankName, "W5%02d", this->_moduleID);
   bk_create(pevent, bankName, TID_DWORD, (void**)&pdata);
   DWORD *idata = pdata;
@@ -721,39 +715,19 @@ bool v1725CONET2::FillEventBank(char * pevent)
     size_remaining_dwords -= dwords_read;
     pdata += dwords_read;
   }
-
+  
+  // Calculate the number of events per channel in bank and save for rate calculation.
   std::vector<int> nevents = GetNumberEvents(dwords_read_total,idata);
   for(int i = 0; i < 16; i++){
     //    if(nevents[i] > 0){
     if(0)std::cout << "got nhits ("<< nevents[i] <<") on chan " 
 		   << i << " " 
 		   << EventCounter[i] << std::endl;
-    EventCounter[i] += nevents[i];
-      
+    EventCounter[i] += nevents[i];      
   }
 
   bk_close(pevent, pdata);
 
-
-  return true;
-
-  // need to ffigureee out how to include this quantity without CAEN
-  // library
-  // find the total number of events for this read
-  for(ch=0; ch<MaxNChannels; ch++) {
-    if (!(DPPConfig.Params.ChannelMask & (1<<ch)))
-      continue;
-    NTotal+=NumEvents[ch];
-    EventCounter[ch] += NumEvents[ch]; // save total events per channel in order to save rates per channel.
-  }
-
-
-  int NumEvents1[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  for (ch=0; ch< 16; ch++)
-    {
-      NumEvents1[ch]=(int)(NumEvents[ch]);
-    }
-    
 
   return true;
 }
@@ -1451,7 +1425,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   DWORD eStored, almostFull, nagg,nepa,status;
   char statBankName[5];
 
-  snprintf(statBankName, sizeof(statBankName), "BL%02d", this->GetModuleID());
+  snprintf(statBankName, sizeof(statBankName), "BL5%01d", this->GetModuleID());
   bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata);
 
   //Get v1725 buffer level
@@ -1473,7 +1447,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   bk_close(pevent, pdata);
 
   // Make second bank with the rates for each channel.
-  snprintf(statBankName, sizeof(statBankName), "VTR%01d", this->GetModuleID());
+  snprintf(statBankName, sizeof(statBankName), "VT5%01d", this->GetModuleID());
   bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata2);
 
   struct timeval nowTime;  
@@ -1486,8 +1460,8 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
     double rate = 0;
     if (dtime !=0){
       rate = (float)EventCounter[i]/(dtime);
-      std::cout << "Rate: " << rate << " " 
-		<< EventCounter[i] << " " << dtime << std::endl;
+      //std::cout << "Rate: " << rate << " " 
+      //	<< EventCounter[i] << " " << dtime << std::endl;
     }
     *pdata2++ = rate;
 
@@ -1507,7 +1481,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   DWORD temp;
   int addr;
   char bankName[5];
-  sprintf(bankName,"TP5%01d", GetModuleID());
+  sprintf(bankName,"TM5%01d", GetModuleID());
   bk_create(pevent, bankName, TID_DWORD, (void **)&pdata3);
   for (int i=0;i<16;i++) {
     addr = V1725_CHANNEL_TEMPERATURE | (i << 8);
@@ -1517,6 +1491,16 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   }
   bk_close(pevent,pdata3);
 
+  // Force a trigger on each channel, if so configured.
+  for(int i = 0; i < 16; i++){
+    usleep(10);
+    int thisbit = 1 << i;
+    if(config.forcetrigger & thisbit){    
+      int addr = V1725_FORCE_TRIGGER | (i << 8);
+       WriteReg(addr,1);
+       std::cout << "Force trigger " << i << std::endl;
+    }
+  }
 
   return bk_size(pevent);
 
