@@ -690,14 +690,15 @@ bool v1725CONET2::FillEventBank(char * pevent)
   int dwords_read_total = 0, dwords_read = 0;
   
   bool sCAEN = ReadReg(0x814C, &size_remaining_dwords);
-  
+  bool loud = false;  
+
   while ((size_remaining_dwords > 0) && (sCAEN)) {
     
     //calculate amount of data to be read in this iteration
     to_read_dwords = (size_remaining_dwords > MAX_BLT_READ_SIZE_BYTES/sizeof(DWORD)) ?
       MAX_BLT_READ_SIZE_BYTES/sizeof(DWORD) : size_remaining_dwords;
     sCAEN = CAENComm_BLTRead(_device_handle, 0, (DWORD *)pdata, to_read_dwords, &dwords_read);
-    
+    if(loud)
     std::cout << sCAEN << " = BLTRead(handle=" << _device_handle
                                  << ", addr=" << 0
                                  << ", pdata=" << pdata
@@ -707,7 +708,7 @@ bool v1725CONET2::FillEventBank(char * pevent)
 
     for(int i = 0; i < 6; i++){
 
-      printf("0x%x\n",pdata[i]);
+      if(loud)printf("0x%x\n",pdata[i]);
     }
     
     //increment pointers/counters
@@ -960,9 +961,6 @@ int v1725CONET2::InitializeForAcq()
     //DPPConfig.DPPParams.dcoffset[ch] = config.DCoffset[ch];
     
   }
-  /* Pile-Up rejection Mode
-     CAEN_DGTZ_DPP_PSD_PUR_DetectOnly -> Only Detect Pile-Up
-     CAEN_DGTZ_DPP_PSD_PUR_Enabled -> Reject Pile-Up */
   // purity not yet usable
   DPPConfig.DPPParams.blthr = config.baseline;
   DPPConfig.DPPParams.purh = CAEN_DGTZ_DPP_PSD_PUR_DetectOnly;
@@ -1488,7 +1486,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
 
   // Force a trigger on each channel, if so configured.
   for(int i = 0; i < 16; i++){
-    usleep(10);
+    //usleep(10);
     int thisbit = 1 << i;
     if(config.forcetrigger & thisbit){    
       int addr = V1725_FORCE_TRIGGER | (i << 8);

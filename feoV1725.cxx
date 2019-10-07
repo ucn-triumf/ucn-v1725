@@ -190,6 +190,42 @@ void seq_callback(INT hDB, INT hseq, void *info){
 }
 
 
+int wait_counter = 0;
+// Check how many events we have in the ring buffer
+BOOL wait_buffer_empty(int transition, BOOL first)
+ {
+
+   if(first){
+     printf("\nDeferred transition.  First call of wait_buffer_empty. Stopping run\n");
+     wait_counter = 0;
+     return FALSE;
+   }
+
+   // Stop the deferred transition after 100 checks.  
+   // If not finished, will never finish.
+   wait_counter++;
+   if(wait_counter > 100) return TRUE;
+
+   DWORD vmeStat;
+   bool haveEventsInBuffer = false;
+   for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725){
+     itv1725->ReadReg(V1725_VME_STATUS, &vmeStat);
+     if( vmeStat & 0x1 ){
+       haveEventsInBuffer = true;
+     }     
+   }	
+
+   // Stay in deferred transition till all events are cleared
+   if(haveEventsInBuffer){
+     printf("Deferred transition: still have events\n");
+     return FALSE;
+   }
+
+   printf("Deferred transition: cleared all events\n");
+   return TRUE;
+ }
+
+
 /**
  * \brief   Frontend initialization
  *
@@ -321,6 +357,10 @@ INT frontend_init(){
       }
     }
   }
+
+  // Setup a deferred transition to wait till the V1725 buffer is empty.
+  //  cm_register_deferred_transition(TR_STOP, wait_buffer_empty);
+
   printf(">>> End of Init. %d active v1725. Expected %d\n\n", nActive, nExpected);
    
   if(nActive == nExpected){
@@ -342,6 +382,8 @@ INT frontend_init(){
 
   return SUCCESS;
 }
+
+
 
 
 /**
@@ -429,7 +471,7 @@ INT end_of_run(INT run_number, char *error){
   runInProgress = false;
   result = ov1725[0].Poll(&eStored);
   if(eStored != 0x0) {
-    cm_msg(MERROR, "feov1725:EOR", "Events left in the v1725: %d",eStored);
+    cm_msg(MINFO, "feov1725:EOR", "Events left in the v1725: %d",eStored);
   }
 
   printf(">>> End Of end_of_run\n\n");
@@ -611,7 +653,7 @@ INT read_trigger_event(char *pevent, INT off) {
   }
 
   //primitive progress bar
-  if (sn % 100 == 0) printf(".");
+  if (sn % 1000 == 0) printf(".");
 
   return bk_size(pevent);
 }
