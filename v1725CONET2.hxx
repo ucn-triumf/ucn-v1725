@@ -87,7 +87,8 @@ private:
   bool _settings_touched; //!< ODB settings touched
   bool _running;          //!< Run in progress
 
-  int EventCounter[16];    //!< save the number of events for each channel; 
+  int EventCounter[16];    //!< save the number of triggers for each channel; 
+  int TriggerCounterCuts[16];    //!< save the number of triggers after cuts for each channel; 
   timeval v1725LastTime;  //!< timestamp for the last reset
 
   /* Buffers to store the data. The memory must be allocated using the appropriate

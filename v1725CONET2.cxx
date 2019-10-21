@@ -351,7 +351,10 @@ v1725CONET2::ConnectErrorCode v1725CONET2::Connect(int connAttemptsMax,
   }
   
   // Reset counters
-  for(int i = 0; i < 16; i++) EventCounter[i] = 0;
+  for(int i = 0; i < 16; i++){
+    TriggerCounterCuts[i] = 0;
+    EventCounter[i] = 0;
+  }
 
   return returnCode;
 }
@@ -426,7 +429,10 @@ bool v1725CONET2::StartRun()
 
 
   // Reset counters
-  for(int i = 0; i < 16; i++) EventCounter[i] = 0;
+  for(int i = 0; i < 16; i++){
+    EventCounter[i] = 0;
+    TriggerCounterCuts[i] = 0;
+  }
   gettimeofday(&v1725LastTime, NULL);
 
   // save config settings to file
@@ -584,12 +590,13 @@ bool v1725CONET2::Poll(DWORD *val)
   return (sCAEN == CAENComm_Success);
 }
 
-// function will return vector with number of events per channel for data packet
-std::vector<int> GetNumberEvents(int bklen, DWORD *pdata)
+// function will return vector with number of triggers per channel for data packet
+// std::pair has triggers before and after cuts
+std::vector<std::vector<int> > GetNumberEvents(int bklen, DWORD *pdata)
 {
   
-  std::vector<int> nevents;
-  for(int i = 0; i < 16; i++) nevents.push_back(0);
+  std::vector<std::vector<int> > nevents;
+  for(int i = 0; i < 16; i++) nevents.push_back(std::vector<int>(2,0));
 
   //printf("Start decoding!!! %i\n",sizeof(long int));
 
@@ -617,11 +624,25 @@ std::vector<int> GetNumberEvents(int bklen, DWORD *pdata)
 
       // skip over the samples.
       int nsamples = size - 5; // calculate number of samples.
+      int min_sample = 99999;
+      for(int i = 0; i < nsamples; i++){
+	int ii = i + counter;
+	int samp1 = (pdata[ii] & 0x3fff);
+	if(samp1 < min_sample){ 
+	  min_sample = samp1;
+	}
+	int samp2 = ((pdata[ii] & 0x3fff0000)>>16);
+	if(samp2 < min_sample){
+	  min_sample = samp2;
+	}
+      }
+      int ph = 14718 - min_sample;
+
       counter += nsamples;
 
       uint32_t extras = pdata[counter];
       counter++;
-      uint32_t qs = pdata[counter];
+      uint32_t qword = pdata[counter];
       counter++;
       
       if(nsamples*2 != (0xffff & header1 )*8)
@@ -636,7 +657,30 @@ std::vector<int> GetNumberEvents(int bklen, DWORD *pdata)
 	printf("V1725 decode; Bad channel number %i\n",
 				       chan);
       }else{
-	nevents[chan]++;
+	nevents[chan][0]++;
+	
+	// PSD cut for Li-6
+	if(chan < 9){
+	  double ql = (double)((qword & 0xffff0000) >> 16);
+	  double qs = (double)((qword & 0x7fff));
+	  double psd = 0;
+	  if(ql != 0) psd = (ql - qs)/ql;    
+	  if(0)std::cout << "QL/QS/PSD " 
+		    << ql << " " 
+		    << qs << " " 
+		    << psd << " " 
+		    << std::endl;
+	  if(ql > 25000.0 && psd > 0.6) nevents[chan][1]++;
+	  
+	}else if(chan == 12 || chan == 13){
+	  if(0)std::cout << "PH check: " << ph << " " << min_sample << std::endl;
+	  // Pulse height cut for He-3...
+	  if(ph > 1500) nevents[chan][1]++;
+
+	}else{
+	  nevents[chan][1]++;
+	}
+
       }      
     }
   }
@@ -706,10 +750,7 @@ bool v1725CONET2::FillEventBank(char * pevent)
                                  << ", to_read_dwords=" << to_read_dwords
                                  << ", dwords_read returned " << dwords_read << ");" << std::endl;
 
-    for(int i = 0; i < 6; i++){
-
-      if(loud)printf("0x%x\n",pdata[i]);
-    }
+    for(int i = 0; i < 6; i++) if(loud)printf("0x%x\n",pdata[i]);   
     
     //increment pointers/counters
     dwords_read_total += dwords_read;
@@ -718,9 +759,10 @@ bool v1725CONET2::FillEventBank(char * pevent)
   }
   
   // Calculate the number of events per channel in bank and save for rate calculation.
-  std::vector<int> nevents = GetNumberEvents(dwords_read_total,idata);
+  std::vector<std::vector<int> > nevents = GetNumberEvents(dwords_read_total,idata);
   for(int i = 0; i < 16; i++){
-    EventCounter[i] += nevents[i];      
+    EventCounter[i] += nevents[i][0];
+    TriggerCounterCuts[i] += nevents[i][1];
   }
 
   bk_close(pevent, pdata);
@@ -1055,10 +1097,11 @@ int v1725CONET2::InitializeForAcq()
       addr = V1725_PRE_TRIGGER | (i << 8);
       retbool = WriteReg(addr, config.PreTriggerSize[i]/4);  // pre-trigger samples is register value * 4
       
-      // Set the negative polarity, lowest charge sensitivity, self-trigger configuration etc               
+      // Set the negative polarity, charge sensitivity, self-trigger configuration etc               
       addr = V1725_DPP_ALGORITHM_CONTROL1 | (i << 8);
       unsigned int value = 0x30000;
       if(!config.DPPSelfTrig[i]) value = 0x1030000;
+      value += (0x7 & config.DPPChargeSen[i]);  // charge sensitivity
       retbool = WriteReg(addr,value );
 
     }
@@ -1112,7 +1155,7 @@ int v1725CONET2::InitializeForAcq()
   printf("Buffer org (0x800C)=0x%x, number aggregates (0x8034)=0x%x\n",regnn1,regnn2);
 
   // Wait for 200ms after channing DAC offsets, before starting calibration. 
-  usleep(200000);
+  usleep(800000);
   
   // Start the ADC calibration
   WriteReg(V1725_ADC_CALIBRATION , 1);
@@ -1414,7 +1457,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
     return false;
   }
 
-  float *pdata, *pdata2;
+  float *pdata, *pdata2, *pdata3;
   DWORD eStored, almostFull, nagg,nepa,status;
   char statBankName[5];
 
@@ -1439,7 +1482,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
 
   bk_close(pevent, pdata);
 
-  // Make second bank with the rates for each channel.
+  // Make second bank with the rates for each channel (before and after cuts).
   snprintf(statBankName, sizeof(statBankName), "VT5%01d", this->GetModuleID());
   bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata2);
 
@@ -1451,11 +1494,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   float total_rate = 0;
   for(int i = 0; i < 16; i++){
     double rate = 0;
-    if (dtime !=0){
-      rate = (float)EventCounter[i]/(dtime);
-      //std::cout << "Rate: " << rate << " " 
-      //	<< EventCounter[i] << " " << dtime << std::endl;
-    }
+    if (dtime !=0) rate = (float)EventCounter[i]/(dtime);    
     *pdata2++ = rate;
 
     if(i < 9)
@@ -1465,24 +1504,47 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   }
   *pdata2++ = total_rate; // save the total rate for the first 9 channels as well.
   if(verbose) printf(" %f \n",total_rate);
-  gettimeofday(&v1725LastTime, NULL);
 
   bk_close(pevent, pdata2);
+  
+  snprintf(statBankName, sizeof(statBankName), "CT5%01d", this->GetModuleID());
+  bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata3);
+
+  if(verbose) printf("Rates (after cuts): ");
+  float total_rate_cut = 0;
+  for(int i = 0; i < 16; i++){
+    double rate = 0;
+    if (dtime !=0) rate = (float)TriggerCounterCuts[i]/(dtime);   
+    *pdata3++ = rate;
+
+    if(i < 9)
+      total_rate_cut += rate;
+    if(verbose) printf(" %f",rate);
+    TriggerCounterCuts[i] = 0;
+  }
+  *pdata3++ = total_rate_cut; // save the total rate (after cuts) for the first 9 channels as well.
+  if(verbose) printf(" %f \n",total_rate_cut);
+  gettimeofday(&v1725LastTime, NULL);
+
+  bk_close(pevent, pdata3);
+
+
+
 
   // Make third bank with ADC temmperatures.
-  DWORD *pdata3;
+  DWORD *pdata4;
   DWORD temp;
   int addr;
   char bankName[5];
   sprintf(bankName,"TM5%01d", GetModuleID());
-  bk_create(pevent, bankName, TID_DWORD, (void **)&pdata3);
+  bk_create(pevent, bankName, TID_DWORD, (void **)&pdata4);
   for (int i=0;i<16;i++) {
     addr = V1725_CHANNEL_TEMPERATURE | (i << 8);
     ReadReg(addr, &temp);
-    *pdata3++ =  temp;
+    *pdata4++ =  temp;
     
   }
-  bk_close(pevent,pdata3);
+  bk_close(pevent,pdata4);
 
   // Force a trigger on each channel, if so configured.
   for(int i = 0; i < 16; i++){

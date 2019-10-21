@@ -83,10 +83,17 @@ endif
 #-------------------------------------------------------------------
 # The following lines define directories. Adjust if necessary
 #
-CONET2_DIR   = $(HOME)/Andrew/CAENStuff
+#CONET2_DIR   = $(HOME)/Andrew/CAENStuff
+#CAENCOMM_DIR = $(CONET2_DIR)/CAENComm-1.2
+#CAENCOMM_LIB = $(CAENCOMM_DIR)/lib/x86
+#CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.7.9
+#CAENDGTZ_LIB = $(CAENDGTZ_DIR)/lib/x86_64
+#CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-2.50
+#CAENVME_LIB  = $(CAENVME_DIR)/lib/x86
+CONET2_DIR   = $(HOME)/packages/CAEN
 CAENCOMM_DIR = $(CONET2_DIR)/CAENComm-1.2
 CAENCOMM_LIB = $(CAENCOMM_DIR)/lib/x86
-CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.7.9
+CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.12.0
 CAENDGTZ_LIB = $(CAENDGTZ_DIR)/lib/x86_64
 CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-2.50
 CAENVME_LIB  = $(CAENVME_DIR)/lib/x86
