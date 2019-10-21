@@ -670,7 +670,7 @@ std::vector<std::vector<int> > GetNumberEvents(int bklen, DWORD *pdata)
 		    << qs << " " 
 		    << psd << " " 
 		    << std::endl;
-	  if(ql > 6000.0 && psd > 0.3) nevents[chan][1]++;
+	  if(ql > 3000.0 && psd > 0.3) nevents[chan][1]++;
 	  
 	}else if(chan == 12 || chan == 13){
 	  if(0)std::cout << "PH check: " << ph << " " << min_sample << std::endl;
@@ -1457,7 +1457,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
     return false;
   }
 
-  float *pdata, *pdata2, *pdata3;
+  float *pdata, *pdata2, *pdata3, *pdata4;
   DWORD eStored, almostFull, nagg,nepa,status;
   char statBankName[5];
 
@@ -1528,23 +1528,44 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
 
   bk_close(pevent, pdata3);
 
+  snprintf(statBankName, sizeof(statBankName), "TC5%01d", this->GetModuleID());
+  bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata3);
+
+  if(verbose) printf("Rates (after cuts): ");
+  float total_number = 0;
+  for(int i = 0; i < 16; i++){
+    double rate = 0;
+    if (dtime !=0) rate = (float)TriggerCounterCuts[i]/(dtime);   
+    *pdata3++ = rate;
+
+    if(i < 9)
+      total_rate_cut += rate;
+    if(verbose) printf(" %f",rate);
+    TriggerCounterCuts[i] = 0;
+  }
+  *pdata3++ = total_rate_cut; // save the total rate (after cuts) for the first 9 channels as well.
+  if(verbose) printf(" %f \n",total_rate_cut);
+  gettimeofday(&v1725LastTime, NULL);
+
+  bk_close(pevent, pdata3);
+
 
 
 
   // Make third bank with ADC temmperatures.
-  DWORD *pdata4;
+  DWORD *pdata5;
   DWORD temp;
   int addr;
   char bankName[5];
   sprintf(bankName,"TM5%01d", GetModuleID());
-  bk_create(pevent, bankName, TID_DWORD, (void **)&pdata4);
+  bk_create(pevent, bankName, TID_DWORD, (void **)&pdata5);
   for (int i=0;i<16;i++) {
     addr = V1725_CHANNEL_TEMPERATURE | (i << 8);
     ReadReg(addr, &temp);
-    *pdata4++ =  temp;
+    *pdata5++ =  temp;
     
   }
-  bk_close(pevent,pdata4);
+  bk_close(pevent,pdata5);
 
   // Force a trigger on each channel, if so configured.
   for(int i = 0; i < 16; i++){
