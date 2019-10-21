@@ -572,6 +572,7 @@ extern "C" INT poll_event(INT source, INT count, BOOL test) {
       //bool evtReady = true;
       int j = 0;
       for (itv1725 = ov1725.begin(); itv1725 != ov1725.end(); ++itv1725){
+	usleep(20);
 	j++;
 	itv1725->ReadReg(V1725_VME_STATUS, &vmeStat);
 	
