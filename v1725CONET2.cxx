@@ -670,7 +670,7 @@ std::vector<std::vector<int> > GetNumberEvents(int bklen, DWORD *pdata)
 		    << qs << " " 
 		    << psd << " " 
 		    << std::endl;
-	  if(ql > 25000.0 && psd > 0.6) nevents[chan][1]++;
+	  if(ql > 6000.0 && psd > 0.3) nevents[chan][1]++;
 	  
 	}else if(chan == 12 || chan == 13){
 	  if(0)std::cout << "PH check: " << ph << " " << min_sample << std::endl;
