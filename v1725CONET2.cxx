@@ -355,6 +355,7 @@ v1725CONET2::ConnectErrorCode v1725CONET2::Connect(int connAttemptsMax,
     TriggerCounterCuts[i] = 0;
     EventCounter[i] = 0;
   }
+  UCNCounter[0] = 0; UCNCounter[1] = 0;
 
   return returnCode;
 }
@@ -433,6 +434,8 @@ bool v1725CONET2::StartRun()
     EventCounter[i] = 0;
     TriggerCounterCuts[i] = 0;
   }
+  UCNCounter[0] = 0; UCNCounter[1] = 0;
+
   gettimeofday(&v1725LastTime, NULL);
 
   // save config settings to file
@@ -678,6 +681,12 @@ std::vector<std::vector<int> > GetNumberEvents(int bklen, DWORD *pdata)
 	  if(ph > 1500) nevents[chan][1]++;
 
 	}else{
+	  struct timeval nowTime;  
+	  gettimeofday(&nowTime, NULL);
+
+	  printf("V1725: timing marker pulse ch=%i time=%12.3f\n",chan,
+		 nowTime.tv_sec + (nowTime.tv_usec /1000000.0));
+
 	  nevents[chan][1]++;
 	}
 
@@ -763,6 +772,8 @@ bool v1725CONET2::FillEventBank(char * pevent)
   for(int i = 0; i < 16; i++){
     EventCounter[i] += nevents[i][0];
     TriggerCounterCuts[i] += nevents[i][1];
+    if(i < 9)   UCNCounter[0] +=nevents[i][1]; // save the total number of Li-6 UCN
+    if(i == 13) UCNCounter[1] +=nevents[i][1]; // save the total number of He-3 UCN
   }
 
   bk_close(pevent, pdata);
@@ -1185,7 +1196,7 @@ int v1725CONET2::InitializeForAcq()
   }
   
   printf("Module[...] : ADC calibration finished already\n");
-
+  usleep(500000);
 
   _settings_touched = false;
 
@@ -1457,7 +1468,7 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
     return false;
   }
 
-  float *pdata, *pdata2, *pdata3, *pdata4;
+  float *pdata, *pdata2, *pdata3;
   DWORD eStored, almostFull, nagg,nepa,status;
   char statBankName[5];
 
@@ -1528,31 +1539,20 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
 
   bk_close(pevent, pdata3);
 
-  snprintf(statBankName, sizeof(statBankName), "TC5%01d", this->GetModuleID());
-  bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata3);
-
-  if(verbose) printf("Rates (after cuts): ");
-  float total_number = 0;
-  for(int i = 0; i < 16; i++){
-    double rate = 0;
-    if (dtime !=0) rate = (float)TriggerCounterCuts[i]/(dtime);   
-    *pdata3++ = rate;
-
-    if(i < 9)
-      total_rate_cut += rate;
-    if(verbose) printf(" %f",rate);
-    TriggerCounterCuts[i] = 0;
-  }
-  *pdata3++ = total_rate_cut; // save the total rate (after cuts) for the first 9 channels as well.
-  if(verbose) printf(" %f \n",total_rate_cut);
-  gettimeofday(&v1725LastTime, NULL);
-
-  bk_close(pevent, pdata3);
+  
+  int *pdata4;
+  snprintf(statBankName, sizeof(statBankName), "TUC0", this->GetModuleID());
+  bk_create(pevent, statBankName, TID_INT, (void **)&pdata4);
+  
+  *pdata4++ = UCNCounter[0];
+  *pdata4++ = UCNCounter[1];
+  
+  bk_close(pevent, pdata4);
 
 
 
 
-  // Make third bank with ADC temmperatures.
+  // Make fifth bank with ADC temmperatures.
   DWORD *pdata5;
   DWORD temp;
   int addr;

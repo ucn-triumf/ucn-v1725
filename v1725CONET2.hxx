@@ -88,6 +88,7 @@ private:
   bool _running;          //!< Run in progress
 
   int EventCounter[16];    //!< save the number of triggers for each channel; 
+  int UCNCounter[2];    //!< save the total number of UCNs from Li-6 and He-3 for run.
   int TriggerCounterCuts[16];    //!< save the number of triggers after cuts for each channel; 
   timeval v1725LastTime;  //!< timestamp for the last reset
 
