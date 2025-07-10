@@ -595,11 +595,11 @@ bool v1725CONET2::Poll(DWORD *val)
 
 // function will return vector with number of triggers per channel for data packet
 // std::pair has triggers before and after cuts
-std::vector<std::vector<int> > GetNumberEvents(int bklen, DWORD *pdata)
+std::vector<std::vector<long int> > GetNumberEvents(int bklen, DWORD *pdata)
 {
   
-  std::vector<std::vector<int> > nevents;
-  for(int i = 0; i < 16; i++) nevents.push_back(std::vector<int>(2,0));
+  std::vector<std::vector<long int> > nevents;
+  for(int i = 0; i < 16; i++) nevents.push_back(std::vector<long int>(2,0));
 
   //printf("Start decoding!!! %i\n",sizeof(long int));
 
@@ -621,79 +621,92 @@ std::vector<std::vector<int> > GetNumberEvents(int bklen, DWORD *pdata)
       counter++;
       uint32_t header1 = pdata[counter];
       counter++;
-      uint32_t header2 = pdata[counter];
-      counter++;
-      uint32_t size = header0 & 0x7fff;
 
-      // skip over the samples.
-      int nsamples = size - 5; // calculate number of samples.
-      int min_sample = 99999;
-      for(int i = 0; i < nsamples; i++){
-	int ii = i + counter;
-	int samp1 = (pdata[ii] & 0x3fff);
-	if(samp1 < min_sample){ 
-	  min_sample = samp1;
+
+      // Calculate how many events there are in this data packet
+      uint32_t ch_agg_size = header0 & 0x3fffff;
+      uint32_t n_samples_d8 = header1 & 0xffff ; // calculate number of samples.                                               
+      int total_size_ch_agg = n_samples_d8*4 + 3;
+      int total_events = (ch_agg_size-2)/total_size_ch_agg;
+
+
+      for(int evt = 0; evt < total_events; evt++){
+
+
+	uint32_t header2 = pdata[counter];
+	counter++;
+	uint32_t size = header0 & 0x7fff;
+
+	// skip over the samples.
+	int min_sample = 99999;
+	for(int i = 0; i < n_samples_d8*4; i++){
+	  int ii = i + counter;
+	  int samp1 = (pdata[ii] & 0x3fff);
+	  if(samp1 < min_sample){ 
+	    min_sample = samp1;
+	  }
+	  int samp2 = ((pdata[ii] & 0x3fff0000)>>16);
+	  if(samp2 < min_sample){
+	    min_sample = samp2;
+	  }
 	}
-	int samp2 = ((pdata[ii] & 0x3fff0000)>>16);
-	if(samp2 < min_sample){
-	  min_sample = samp2;
-	}
-      }
-      int ph = 14718 - min_sample;
+	int ph = 14718 - min_sample;
 
-      counter += nsamples;
+	counter += n_samples_d8*4;
 
-      uint32_t extras = pdata[counter];
-      counter++;
-      uint32_t qword = pdata[counter];
-      counter++;
+	uint32_t extras = pdata[counter];
+	counter++;
+	uint32_t qword = pdata[counter];
+	counter++;
       
-      if(nsamples*2 != (0xffff & header1 )*8)
-	std::cout << "V1725 Check2: " << nsamples << " " 
-		  << (0xffff & header1 )*8 
-		  << " whoops, mistake in decoding, sample size not as expected. " 
-		  << std::endl;
-
-      // increment the counter
-      unsigned int chan = ch*2 + ((header2 & 0x80000000) >> 31);
-      if(chan < 0 || chan > 16){
-	printf("V1725 decode; Bad channel number %i\n",
-				       chan);
-      }else{
-	nevents[chan][0]++;
+	if(0) if(n_samples_d8*4*2 != (0xffff & header1 )*8)
+	      std::cout << "V1725 Check2: " << n_samples_d8 << " " 
+			<< (0xffff & header1 )*8 
+			<< " whoops, mistake in decoding, sample size not as expected. " 
+			<< std::endl;
 	
-	// PSD cut for Li-6
-	if(chan < 9){
-	  double ql = (double)((qword & 0xffff0000) >> 16);
-	  double qs = (double)((qword & 0x7fff));
-	  double psd = 0;
-	  if(ql != 0) psd = (ql - qs)/ql;    
-	  if(0)std::cout << "QL/QS/PSD " 
-		    << ql << " " 
-		    << qs << " " 
-		    << psd << " " 
-		    << std::endl;
-	  if(ql > 3000.0 && psd > 0.3) nevents[chan][1]++;
-	  
-	}else if(chan == 12 || chan == 13){
-	  if(0)std::cout << "PH check: " << ph << " " << min_sample << std::endl;
-	  // Pulse height cut for He-3...
-	  if(ph > 1500) nevents[chan][1]++;
-
+	// increment the counter
+	unsigned int chan = ch*2 + ((header2 & 0x80000000) >> 31);
+	if(chan < 0 || chan > 16){
+	  printf("V1725 decode; Bad channel number %i\n",
+		 chan);
 	}else{
-	  struct timeval nowTime;  
-	  gettimeofday(&nowTime, NULL);
-
-	  printf("V1725: timing marker pulse ch=%i time=%12.3f\n",chan,
-		 nowTime.tv_sec + (nowTime.tv_usec /1000000.0));
-
-	  nevents[chan][1]++;
+	  nevents[chan][0]++;
+	  
+	  // PSD cut for Li-6
+	  if(chan < 9){
+	    double ql = (double)((qword & 0xffff0000) >> 16);
+	    double qs = (double)((qword & 0x7fff));
+	    double psd = 0;
+	    if(ql != 0) psd = (ql - qs)/ql;    
+	    if(0)std::cout << "QL/QS/PSD " 
+			   << ql << " " 
+			   << qs << " " 
+			   << psd << " " 
+			   << std::endl;
+	    //	  if(ql > 450.0 && psd > 0.3) nevents[chan][1]++; // QL threshold if no amplifier
+	    if(ql > 2000.0 && psd > 0.3) nevents[chan][1]++; // QL threshold if amplifier
+	    
+	  }else if(chan == 12 || chan == 13){
+	    if(0)std::cout << "PH check: " << ph << " " << min_sample << std::endl;
+	    // Pulse height cut for He-3...
+	    if(ph > 1500) nevents[chan][1]++;
+	    
+	  }else{
+	    struct timeval nowTime;  
+	    gettimeofday(&nowTime, NULL);
+	    
+	    printf("V1725: timing marker pulse ch=%i time=%12.3f\n",chan,
+		   nowTime.tv_sec + (nowTime.tv_usec /1000000.0));
+	    
+	    nevents[chan][1]++;
+	  }
 	}
-
       }      
     }
   }
-  if((unsigned int)counter != (0xfffffff & pdata[0])) 
+
+  if(0)  if((unsigned int)counter != (0xfffffff & pdata[0])) 
     std::cout << "V1725 Check:  " << counter << " " 
 	      << (0xfffffff & pdata[0]) 
 	      << "Whoops, multi event readout, decoding is wrong@! " 
@@ -768,7 +781,7 @@ bool v1725CONET2::FillEventBank(char * pevent)
   }
   
   // Calculate the number of events per channel in bank and save for rate calculation.
-  std::vector<std::vector<int> > nevents = GetNumberEvents(dwords_read_total,idata);
+  std::vector<std::vector<long int> > nevents = GetNumberEvents(dwords_read_total,idata);
   for(int i = 0; i < 16; i++){
     EventCounter[i] += nevents[i][0];
     TriggerCounterCuts[i] += nevents[i][1];
@@ -1158,12 +1171,17 @@ int v1725CONET2::InitializeForAcq()
 
   unsigned int regnn, regnn1, regnn2;
   //// set number of aggregates in the v1725 memory (see multi-event memory organization in 1725 manual)
-  WriteReg(0x800C, 0x8);
+  WriteReg(0x800C, 0x6);
+  //  WriteReg(0x800C, 0x8);
   ReadReg(0x800C,&regnn1);
   //// set number of events per aggregate
-  WriteReg(0x8034, 0x1);
-  ReadReg(0x1034,&regnn2);
+  //WriteReg(0x8034, 0x1);
+  WriteReg(0x8034, 0x50); // 50! TL 2025-06-13; increase events per aggregate, to reduce buffer full problem
+  //ReadReg(0x1034,&regnn2);
   printf("Buffer org (0x800C)=0x%x, number aggregates (0x8034)=0x%x\n",regnn1,regnn2);
+
+  // Set the almost full level to 32
+  WriteReg(V1725_ALMOST_FULL_LEVEL, 1);
 
   // Wait for 200ms after channing DAC offsets, before starting calibration. 
   usleep(800000);
@@ -1482,14 +1500,17 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   CAEN_DGTZ_ReadRegister(_device_handle,0x8034, &nepa);
   CAEN_DGTZ_ReadRegister(_device_handle,0x8104, &status);
 
-
+  
 
   // save if there are events ready
-  *pdata++ = (status & 0x4) >> 2;
+  //*pdata++ = (status & 0x4) >> 2;
+  // Save the number of stored events instead (TL 2025-07-09)
+  *pdata++ = eStored;
   // save if any buffers are full
-  *pdata++ = (status & 0x8) >> 3;
+  *pdata++ = (status & 0x10) >> 4;
+  unsigned int busy = (status & 0x10) >> 4;
 
-  if(verbose)  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1725_EVENT_STORED, V1725_ALMOST_FULL_LEVEL, nepa, status);
+  if(verbose || 1)  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x %i\n",_link,eStored,almostFull, nagg,V1725_EVENT_STORED, V1725_ALMOST_FULL_LEVEL, nepa, status,busy);
 
   bk_close(pevent, pdata);
 
@@ -1567,6 +1588,8 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
   }
   bk_close(pevent,pdata5);
 
+  ///  usleep(100);
+
   // Force a trigger on each channel, if so configured.
   for(int i = 0; i < 16; i++){
     //usleep(10);
@@ -1576,6 +1599,11 @@ bool v1725CONET2::FillBufferLevelBank(char * pevent)
        WriteReg(addr,1);
     }
   }
+
+  // Flush the V1725 aggregates, even if not full; otherwise will wait a long time for the 
+  // data for low trigger rate conditions...
+  WriteReg(0x8040,1);
+
 
   return bk_size(pevent);
 
