@@ -1171,16 +1171,16 @@ int v1725CONET2::InitializeForAcq()
 
   unsigned int regnn, regnn1, regnn2;
   //// set number of aggregates in the v1725 memory (see multi-event memory organization in 1725 manual)
-  WriteReg(0x800C, 0x6);
+  WriteReg(0x800C, 0x5);
   //  WriteReg(0x800C, 0x8);
   ReadReg(0x800C,&regnn1);
   //// set number of events per aggregate
   //WriteReg(0x8034, 0x1);
-  WriteReg(0x8034, 0x50); // 50! TL 2025-06-13; increase events per aggregate, to reduce buffer full problem
+  WriteReg(0x8034, 400); // 50! TL 2025-06-13; increase events per aggregate, to reduce buffer full problem
   //ReadReg(0x1034,&regnn2);
   printf("Buffer org (0x800C)=0x%x, number aggregates (0x8034)=0x%x\n",regnn1,regnn2);
 
-  // Set the almost full level to 32
+  // Set the almost full level to 1; doesn't seem to do anything
   WriteReg(V1725_ALMOST_FULL_LEVEL, 1);
 
   // Wait for 200ms after channing DAC offsets, before starting calibration. 
