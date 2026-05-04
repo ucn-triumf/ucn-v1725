@@ -290,7 +290,7 @@ v1725CONET2::ConnectErrorCode v1725CONET2::Connect()
   memset(&DPPConfig.DPPParams, 0, sizeof(CAEN_DGTZ_DPP_PSD_Params_t));
   
   // Direct optical connection - for DPP
-  DPPConfig.Params.LinkType = CAEN_DGTZ_PCI_OpticalLink;  // Link Type
+  DPPConfig.Params.LinkType = CAEN_DGTZ_OpticalLink;  // Link Type
   DPPConfig.Params.VMEBaseAddress = 0;                    // For direct CONET connection, 
                                                           // VMEBaseAddress must be 0
   return Connect(2, 10);                                  //reasonable default values
@@ -987,7 +987,7 @@ int v1725CONET2::InitializeForAcq()
   //DPPConfig.Params.IOlev = CAEN_DGTZ_IOLevel_TTL; // July 2019; TL: use TTL levels.
   
   // Direct optical connection
-  DPPConfig.Params.LinkType = CAEN_DGTZ_PCI_OpticalLink;   // Link Type
+  DPPConfig.Params.LinkType = CAEN_DGTZ_OpticalLink;   // Link Type
   DPPConfig.Params.VMEBaseAddress = 0;                     // For direct CONET connection, VMEBaseAddress must be 0
   DPPConfig.Params.AcqMode = (CAEN_DGTZ_DPP_AcqMode_t)config.acq_mode;              // 0== CAEN_DGTZ_DPP_ACQ_MODE_Oscilloscope
                                                            // 1==CAEN_DGTZ_DPP_ACQ_MODE_List or 
