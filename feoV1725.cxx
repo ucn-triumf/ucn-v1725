@@ -81,6 +81,7 @@ INT event_buffer_size = 10 * max_event_size;
 bool runInProgress = false; //!< run is in progress
 bool runOver = false; //!< run is over
 bool runStopRequested = false; //!< stop run requested
+BOOL equipment_common_overwrite = FALSE; // don't overwrite equipment common if set already
 
 
 // __________________________________________________________________

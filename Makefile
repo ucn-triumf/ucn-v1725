@@ -7,7 +7,7 @@
 #
 
 # Path to gcc 4.8.1 binaries (needed to use new C++ stuff)
-PATH := /home/ucn/packages/newgcc/bin:$(PATH)
+#PATH := /home/ucn/packages/newgcc/bin:$(PATH)
 
 USE_SYSTEM_BUFFER=1
 SIMULATION=0
@@ -49,7 +49,7 @@ ifeq ($(OSTYPE),linux)
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -DLINUX
 CFLAGS = -g -Wall -pthread -I$(MIDASSYS)/include -DHAVE_LIBUSB -I$(MIDASSYS)/mscb -I$(MIDASSYS)/drivers/divers
-LDFLAGS = -g -lm -lutil -lnsl -lpthread -lrt -lc 
+LDFLAGS = -g -lm -lutil -lpthread -lrt -lc -lnsl
 endif
 
 #-----------------------------------------
@@ -83,19 +83,12 @@ endif
 #-------------------------------------------------------------------
 # The following lines define directories. Adjust if necessary
 #
-#CONET2_DIR   = $(HOME)/Andrew/CAENStuff
-#CAENCOMM_DIR = $(CONET2_DIR)/CAENComm-1.2
-#CAENCOMM_LIB = $(CAENCOMM_DIR)/lib/x86
-#CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.7.9
-#CAENDGTZ_LIB = $(CAENDGTZ_DIR)/lib/x86_64
-#CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-2.50
-#CAENVME_LIB  = $(CAENVME_DIR)/lib/x86
-CONET2_DIR   = $(HOME)/packages/CAEN
-CAENCOMM_DIR = $(CONET2_DIR)/CAENComm-1.2
+CONET2_DIR   = $(HOME)/packages
+CAENCOMM_DIR = $(CONET2_DIR)/CAENComm-1.7.0
 CAENCOMM_LIB = $(CAENCOMM_DIR)/lib/x86
-CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.12.0
+CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.17.3
 CAENDGTZ_LIB = $(CAENDGTZ_DIR)/lib/x86_64
-CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-2.50
+CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-v4.0.2
 CAENVME_LIB  = $(CAENVME_DIR)/lib/x86
 MIDAS_INC    = $(MIDASSYS)/include
 MIDAS_LIB    = $(MIDASSYS)/lib
