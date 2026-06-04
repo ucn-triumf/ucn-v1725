@@ -304,7 +304,7 @@ v1725CONET2::ConnectErrorCode v1725CONET2::Connect()
 v1725CONET2::ConnectErrorCode v1725CONET2::Connect(int connAttemptsMax, 
 						   int secondsBeforeTimeout)
 {
-  if (verbose) cout << GetName() << "::Connect()\n";
+  if (verbose || 1) cout << GetName() << "::Connect()\n";
   ConnectErrorCode returnCode;
 
   if (IsConnected()) {
@@ -1171,12 +1171,14 @@ int v1725CONET2::InitializeForAcq()
 
   unsigned int regnn, regnn1, regnn2;
   //// set number of aggregates in the v1725 memory (see multi-event memory organization in 1725 manual)
-  WriteReg(0x800C, 0x5);
-  //  WriteReg(0x800C, 0x8);
+  //WriteReg(0x800C, 0x5);
+  WriteReg(0x800C, 0x8);
+  //WriteReg(0x800C, 0x3); // Jan 2026 TL; try to sustain highest rate
   ReadReg(0x800C,&regnn1);
   //// set number of events per aggregate
-  //WriteReg(0x8034, 0x1);
-  WriteReg(0x8034, 400); // 50! TL 2025-06-13; increase events per aggregate, to reduce buffer full problem
+  //WriteReg(0x8034, 0x30);
+  WriteReg(0x8034, 400); // TL 2025-06-13; increase events per aggregate, to reduce buffer full problem
+  //WriteReg(0x8034, 200); // TL 2026-01-21; try to sustain highest rate
   //ReadReg(0x1034,&regnn2);
   printf("Buffer org (0x800C)=0x%x, number aggregates (0x8034)=0x%x\n",regnn1,regnn2);
 
